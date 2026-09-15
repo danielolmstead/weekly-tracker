@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2d6a4f" id="theme-meta">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Weekly Tracker">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: #e2ddd6;
+    --border2: #ccc8bf;
+    --text: #1a1916;
+    --text2: #6b6760;
+    --text3: #a09d98;
+    --accent: #2d6a4f;
+    --accent-bg: #e8f5ee;
+    --accent-hover: #245a42;
+    --danger: #c0392b;
+    --danger-bg: #fdf2f0;
+    --warning: #b8860b;
+    --warning-bg: #fdf8e8;
+    --success: #2d8641;
+    --success-bg: #eaf5ec;
+    --tag-bg: #ede9e3;
+    --tag-text: #5a5650;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --sidebar-w: 220px;
+  }
+  .dark {
+    --bg: #141412;
+    --surface: #1e1d1b;
+    --surface2: #252422;
+    --border: #2e2c29;
+    --border2: #3a3835;
+    --text: #f0ede8;
+    --text2: #9a9790;
+    --text3: #5a5850;
+    /* --accent, --accent-bg, --accent-hover are set dynamically by applyTheme() */
+    --danger: #f87171;
+    --danger-bg: #2a1010;
+    --warning: #fbbf24;
+    --warning-bg: #2a2010;
+    --success: #6bd47f;
+    --success-bg: #17301f;
+    --tag-bg: #2a2825;
+    --tag-text: #9a9790;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; font-size: 14px; transition: background 0.2s, color 0.2s; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w); min-width: var(--sidebar-w); height: 100vh; position: sticky; top: 0;
+    background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-top { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+  .app-name { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); font-family: var(--mono); }
+  .sidebar-actions { display: flex; gap: 6px; margin-top: 12px; }
+  .sidebar-actions button { flex: 1; font-size: 12px; padding: 6px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+  .sidebar-actions button:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  .weeks-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .week-item { padding: 8px 10px; border-radius: var(--radius); cursor: pointer; margin-bottom: 2px; transition: all 0.15s; display: flex; align-items: center; justify-content: space-between; gap: 6px; position: relative; }
+  .week-item:hover { background: var(--surface2); }
+  .week-item.active { background: var(--accent-bg); color: var(--accent); }
+  .week-item-label { font-size: 12px; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .week-item-count { font-size: 10px; color: var(--text3); font-family: var(--mono); flex-shrink: 0; }
+  .week-item.active .week-item-count { color: var(--accent); opacity: 0.7; }
+  .week-item-menu-btn { background: none; border: none; padding: 3px 5px; border-radius: 4px; cursor: pointer; color: var(--text3); line-height: 1; opacity: 0; transition: opacity 0.15s, background 0.15s; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+  .week-item:hover .week-item-menu-btn { opacity: 1; }
+  .week-item-menu-btn:hover { background: var(--border); color: var(--text); }
+  .week-menu-popover { position: absolute; top: 100%; right: 8px; margin-top: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); min-width: 110px; z-index: 50; padding: 4px; display: none; }
+  .week-menu-popover.open { display: block; }
+  .week-menu-item { display: block; width: 100%; text-align: left; padding: 6px 10px; font-size: 12px; background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
+  .week-menu-item:hover { background: var(--surface2); }
+  .week-menu-item.danger { color: var(--danger); }
+  .week-menu-item.danger:hover { background: var(--danger-bg); }
+  .sidebar-bottom { padding: 12px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .dark-toggle { background: none; border: 1px solid var(--border); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 12px; font-family: var(--font); transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+  .dark-toggle:hover { background: var(--surface2); }
+  .sidebar-bottom-left { display: flex; align-items: center; gap: 6px; }
+  .theme-btn-wrap { position: relative; }
+  .data-btns { display: flex; gap: 4px; }
+  .data-btn { background: none; border: 1px solid var(--border); padding: 6px 8px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-family: var(--font); transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
+  .data-btn:hover { background: var(--surface2); color: var(--text); }
+  .theme-popover { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 8px; display: none; z-index: 100; }
+  .theme-popover.open { display: flex; gap: 6px; }
+  .theme-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; padding: 0; transition: transform 0.15s; outline: 1.5px solid var(--border); outline-offset: -1.5px; }
+  .theme-swatch:hover { transform: scale(1.12); }
+  .theme-swatch.active { border-color: var(--text); outline: none; }
+
+  /* MAIN */
+  #main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; }
+  #header { padding: 24px 32px 20px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .week-title-area { flex: 1; }
+  .week-title { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  .week-subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
+  .progress-ring-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+  .header-btns { display: flex; gap: 8px; }
+  .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .btn.btn-icon { padding: 8px 10px; }
+  .btn:hover { background: var(--border); }
+  .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* CONTENT */
+  #content { flex: 1; overflow-y: auto; padding: 24px 32px; max-width: 860px; width: 100%; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty-state p { font-size: 15px; margin-bottom: 16px; }
+
+  /* CHECKLIST */
+  .checklist { list-style: none; }
+  .task-item { margin-bottom: 2px; transition: background 0.1s; }
+  /* When hovered, the LI becomes a positioned stacking context with z-index 1
+     so its background paints ABOVE the indent guide line (which is a positioned
+     pseudo-element of the .subtask-list, painting naturally at z-index auto).
+     In the default state the LI is non-positioned and the line paints over it. */
+  .task-item:hover { background: var(--surface2); border-radius: var(--radius); position: relative; z-index: 1; }
+  /* When the hovered task has children (the immediate next sibling is a .subtask-list,
+     which contains ALL descendants of this task), extend the highlight to cover them
+     too so the parent and its subtree read as one unified hover region.
+     The parent gets rounded TOP corners only, the descendants' subtask-list gets
+     rounded BOTTOM corners, so together they form one continuous rounded block. */
+  .task-item:hover:has(+ .subtask-list) { border-radius: var(--radius) var(--radius) 0 0; }
+  .task-item:hover + .subtask-list { background: var(--surface2); border-radius: 0 0 var(--radius) var(--radius); position: relative; z-index: 1; }
+  .task-item:hover .task-controls { opacity: 1; }
+  .task-item:hover .drag-handle { opacity: 1; }
+  .task-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius); transition: background 0.1s; position: relative; }
+  .drag-handle { cursor: grab; color: var(--text3); flex-shrink: 0; padding: 2px; opacity: 0; transition: opacity 0.15s; user-select: none; display: inline-flex; align-items: center; }
+  .drag-handle:active { cursor: grabbing; }
+  .task-item.dragging { opacity: 0.4; }
+  .task-item.drag-over > .task-row { border-top: 2px solid var(--accent); }
+
+  /* CHECKBOX */
+  .checkbox { width: 17px; height: 17px; border-radius: 4px; border: 1.5px solid var(--border2); background: var(--surface); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .checkbox:hover { border-color: var(--accent); }
+  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+  .checkbox.checked::after { content: ''; display: block; width: 4px; height: 8px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px, -1px); }
+  .checkbox.partial { background: var(--accent-bg); border-color: var(--accent); }
+  .checkbox.partial::after { content: ''; display: block; width: 8px; height: 2px; background: var(--accent); }
+
+  /* TASK LABEL */
+  /* Wrapper around the label and the inline note indicator. The wrapper takes
+     the row's flex-grow space; inside, the label is sized to its text content
+     so the indicator sits immediately after the title, not floating at the
+     right edge of the row. min-width:0 lets the wrapper shrink when needed.
+     cursor:text hints that the empty area is a click-to-focus target for
+     the label (see wrapClickToFocus in JS). */
+  .task-label-wrap { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; cursor: text; }
+  .task-label { flex: 0 1 auto; font-size: 13.5px; color: var(--text); line-height: 1.4; cursor: text; outline: none; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
+  .task-label:focus { background: var(--surface2); }
+  .task-label[data-done="true"] { color: var(--text3); text-decoration: line-through; }
+  .task-label[contenteditable="true"] { cursor: text; }
+  /* Small pencil indicator next to the title when a task has a note saved.
+     Always visible (unlike the row-controls pencil button which is hover-only)
+     so the presence of a note is glanceable. Clickable to toggle the note.
+     Colored to echo the selected-week highlight: a softened accent tint by
+     default, promoting to full accent + tinted background on hover. */
+  .note-indicator { display: inline-flex; align-items: center; color: color-mix(in srgb, var(--accent) 55%, transparent); cursor: pointer; flex-shrink: 0; padding: 2px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+  .note-indicator:hover { color: var(--accent); background: var(--accent-bg); }
+  /* Inline URLs inside a task label become clickable anchors that open in a
+     new tab. Underline is dimmed so it doesn't dominate the row visually. */
+  .task-link { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); text-underline-offset: 2px; cursor: pointer; }
+  .task-link:hover { text-decoration-color: var(--accent); }
+  /* Textareas can't hold inline HTML, so URLs found in a note render below the
+     textarea as small clickable pills. Styled to match the "selected week"
+     look — a soft accent-tinted background with the full accent color. */
+  .task-note-area { padding: 4px 8px 6px 60px; position: relative; }
+  .task-note-area::before { content: ''; position: absolute; left: 42px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
+  /* Note editor is a contenteditable div (not a textarea) so it can hold
+     inline HTML — specifically, clickable <a> tags for URLs. white-space:
+     pre-wrap preserves user-typed newlines without needing <br> insertion. */
+  .task-note { width: 100%; font-size: 12.5px; font-family: var(--font); color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; outline: none; min-height: 36px; line-height: 1.5; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; cursor: text; transition: border 0.15s; }
+  .task-note:focus { border-color: var(--accent); }
+  /* Placeholder shows when the div is truly empty. On blur we normalize the
+     contents so this stays reliable — see updateNote(). */
+  .task-note:empty::before { content: attr(data-placeholder); color: var(--text3); pointer-events: none; }
+
+  /* METADATA ROW */
+  .task-meta { display: flex; align-items: center; gap: 6px; padding: 2px 8px 2px 60px; flex-wrap: wrap; }
+  .tag-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--tag-bg); color: var(--tag-text); font-size: 11px; padding: 2px 8px; border-radius: 99px; cursor: pointer; }
+  .tag-pill:hover { background: var(--border); }
+  .tag-pill .remove-tag { font-size: 10px; opacity: 0.6; }
+  .due-badge { font-size: 11px; font-family: var(--mono); color: var(--text3); background: var(--surface2); padding: 2px 7px; border-radius: 99px; cursor: pointer; }
+  .due-badge.overdue { color: var(--danger); background: var(--danger-bg); }
+  .due-badge.soon { color: var(--warning); background: var(--warning-bg); }
+  .add-tag-btn { font-size: 11px; color: var(--text3); background: none; border: 1px dashed var(--border2); padding: 2px 7px; border-radius: 99px; cursor: pointer; transition: all 0.15s; }
+  .add-tag-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* NOTE */
+  /* Note section: when a task has a note open, draw a thin vertical line on
+     its left side that visually matches the indent connector lines. The line
+     sits at x=42 of the note-area, which aligns with the task's own checkbox
+     center column, making the note read as "hanging from" that checkbox. */
+  .task-note-area { padding: 4px 8px 6px 60px; position: relative; }
+  .task-note-area::before { content: ''; position: absolute; left: 42px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
+
+  /* CONTROLS */
+  .task-controls { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+  .task-btn { background: none; border: none; padding: 5px; border-radius: 4px; cursor: pointer; color: var(--text3); line-height: 1; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
+  .task-btn:hover { background: var(--surface); color: var(--text); }
+  .task-btn.note-active { color: var(--accent); }
+  .task-btn.danger:hover { color: var(--danger); }
+  /* Expand/collapse toggle sits at the far right of a parent task's row.
+     Visually a sibling to .task-controls but with its own (always-on) opacity
+     so users can see at a glance whether a task is currently collapsed. */
+  .expand-toggle { background: none; border: none; padding: 5px; border-radius: 4px; cursor: pointer; color: var(--text3); line-height: 1; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .expand-toggle:hover { background: var(--surface); color: var(--text); }
+  /* Star toggle to add a task to Today's Shortlist. Follows the drag-handle
+     pattern: opacity 0 until the row is hovered so it doesn't add visual
+     noise to un-starred rows, then always opaque + gold once starred. The
+     `starred` class also fills the star polygon via currentColor. */
+  .star-toggle { background: none; border: none; padding: 5px; border-radius: 4px; cursor: pointer; color: var(--text3); line-height: 1; opacity: 0; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .task-item:hover .star-toggle { opacity: 1; }
+  .star-toggle:hover { color: var(--warning); background: var(--surface); }
+  .star-toggle.starred { opacity: 1; color: var(--warning); }
+  .star-toggle.starred svg polygon { fill: currentColor; }
+  /* Today's Shortlist — a compact list of starred tasks that lives above the
+     main checklist. Same underlying tasks; toggling done here toggles them
+     everywhere. Hidden entirely (display:none via JS) when nothing's starred. */
+  .shortlist { margin-bottom: 20px; padding: 14px 18px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
+  .shortlist-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--warning); border-radius: 2px; }
+  .shortlist-items { list-style: none; }
+  /* Nested items under an expanded shortlist entry.
+     The indent is applied as padding-left on each nested LI (not as
+     padding/margin on the UL) because certain flex-in-editable contexts
+     were making the UL's own padding-left collapse to near-zero. Padding
+     on the LI itself always applies. */
+  .shortlist-subitems { list-style: none; margin-top: 2px; position: relative; }
+  .shortlist-subitems > .shortlist-item { padding-left: 24px; }
+  /* Vertical connector line — sits inside the subitems block at x=12,
+     to the left of the indented nested items. */
+  .shortlist-subitems::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
+  /* Shortlist LI is a plain block that can hold both its row content and
+     an optional child <ul> of nested items. The row itself is the flex
+     container — matches the main-list task-item + task-row pattern. */
+  .shortlist-item { list-style: none; display: block; }
+  .shortlist-item-row { display: flex; align-items: flex-start; gap: 8px; padding: 5px 8px; border-radius: var(--radius); min-height: 30px; }
+  .shortlist-item-row:hover { background: var(--surface2); }
+  /* Vertically center the small fixed-size row controls against the FIRST
+     line of a wrapping label. `align-items: flex-start` on the row keeps
+     everything top-aligned so a very long, multi-line label doesn't push
+     the checkbox and star to the middle of a tall row. */
+  .shortlist-item-row > .checkbox,
+  .shortlist-item-row > .drag-handle,
+  .shortlist-item-row > .star-toggle,
+  .shortlist-item-row > .expand-toggle { margin-top: 1px; }
+  .shortlist-label { flex: 1; font-size: 13.5px; color: var(--text); line-height: 1.4; min-width: 0; word-wrap: break-word; overflow-wrap: anywhere; cursor: text; outline: none; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
+  .shortlist-label:focus { background: var(--surface2); }
+  .shortlist-label[data-done="true"] { color: var(--text3); text-decoration: line-through; }
+  /* Star inside shortlist items is already the "starred" state — clicking it
+     removes the item from the shortlist. Full opacity by default (no need
+     to hover to see it, since it's the item's primary action). */
+  .shortlist-item .star-toggle { opacity: 1; padding: 3px; }
+  /* Slightly tighter chevron inside shortlist items to match the compact row. */
+  .shortlist-item .expand-toggle { padding: 3px; }
+  /* Drag-to-reorder visuals for root shortlist items. Mirrors main-list
+     behavior: grip fades in on hover, source LI dims while dragging, and
+     the drop target gets a top-border cue showing where the item will land. */
+  .shortlist-item .drag-handle { opacity: 0; }
+  .shortlist-item-row:hover .drag-handle { opacity: 1; }
+  .shortlist-item.dragging { opacity: 0.4; }
+  .shortlist-item.drag-over > .shortlist-item-row { border-top: 2px solid var(--accent); }
+  /* Delete confirmation popover. Appears directly beneath the trash button
+     after the user clicks it — a red X on the left to cancel, a green check
+     on the right to commit. Positioned absolutely against the task-row so it
+     doesn't disturb layout. The right offset accounts for the star-toggle
+     (always present at the far right) plus, when the task has children,
+     the expand-toggle chevron between the trash button and the star. */
+  .delete-confirm { position: absolute; top: calc(100% - 2px); right: 40px; display: flex; gap: 2px; z-index: 10; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px; box-shadow: var(--shadow-md); }
+  .task-item:has(.expand-toggle) .delete-confirm { right: 72px; }
+  .delete-confirm-btn { background: none; border: none; padding: 4px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .delete-confirm-btn.cancel { color: var(--danger); }
+  .delete-confirm-btn.confirm { color: var(--success); }
+  .delete-confirm-btn.cancel:hover { background: var(--danger-bg); }
+  .delete-confirm-btn.confirm:hover { background: var(--success-bg); }
+  /* While the confirmation is showing on this task, keep its row controls
+     visible even without hover, so the trash button remains as the anchor. */
+  .task-item.pending-delete .task-controls { opacity: 1; }
+  /* The pending-delete task stays visually highlighted the whole time the
+     confirmation is up. This gives the floating popover an anchor and prevents
+     the hover state from flickering off as the cursor moves onto the popover
+     (which technically leaves the task-item's box). We mirror the same
+     parent+subtree structure that :hover uses so the subtree of a parent task
+     also stays highlighted (it's what would be deleted along with the parent).
+     z-index is boosted above the :hover z-index of 1 so the pending task
+     always sits visually above any neighboring hovered task. */
+  .task-item.pending-delete { background: var(--surface2); border-radius: var(--radius); position: relative; z-index: 10; }
+  .task-item.pending-delete:has(+ .subtask-list) { border-radius: var(--radius) var(--radius) 0 0; }
+  .task-item.pending-delete + .subtask-list { background: var(--surface2); border-radius: 0 0 var(--radius) var(--radius); position: relative; z-index: 10; }
+  /* While ANY task has a delete confirmation showing, suppress the hover
+     highlight on other tasks. The popover extending down from the trash
+     button unavoidably overlaps the next row visually; without this rule the
+     row below would flicker to hovered whenever the cursor left the popover
+     from below. :has() targets the whole document. */
+  body:has(.task-item.pending-delete) .task-item:not(.pending-delete):hover { background: transparent; }
+  body:has(.task-item.pending-delete) .task-item:not(.pending-delete):hover + .subtask-list { background: transparent; }
+
+  /* CHILD TASKS */
+  .subtask-list { list-style: none; padding-left: 24px; margin-top: 1px; position: relative; transition: background 0.1s; }
+  .subtask-list::before { content: ''; position: absolute; left: 42px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
+  .subtask-list .task-label { font-size: 13px; }
+  .subtask-list .subtask-list { padding-left: 22px; }
+
+  /* ADD ROOT TASK */
+  .add-root-btn { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-radius: var(--radius); border: 1.5px dashed var(--border2); color: var(--text3); background: none; font-size: 13px; font-family: var(--font); cursor: pointer; width: 100%; transition: all 0.2s; margin-top: 8px; }
+  .add-root-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+  /* SUMMARY PANEL */
+  #summary-panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; padding: 24px; }
+  #summary-panel.open { display: flex; }
+  .summary-box { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); width: 100%; max-width: 680px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+  .summary-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .summary-header h2 { font-size: 16px; font-weight: 600; }
+  .summary-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .summary-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 8px; font-family: var(--mono); }
+  #summary-para { width: 100%; min-height: 100px; font-family: var(--font); font-size: 14px; color: var(--text); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; resize: none; outline: none; line-height: 1.7; }
+  #summary-para:focus { border-color: var(--accent); }
+  #summary-para.generating { opacity: 0.6; font-style: italic; }
+  .summary-checklist { margin-top: 20px; }
+  .summary-item { padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 8px; }
+  .summary-item:last-child { border-bottom: none; }
+  .summary-check { color: var(--accent); flex-shrink: 0; margin-top: 1px; display: inline-flex; align-items: center; }
+  .summary-item.undone { opacity: 0.55; }
+  .summary-item.undone .summary-check { display: inline-block; width: 13px; height: 13px; border: 1.5px solid var(--border2); border-radius: 3px; background: var(--surface2); margin-top: 3px; }
+  .summary-item-text { flex: 1; }
+  .summary-item-note { font-size: 11.5px; color: var(--text2); margin-top: 3px; font-style: italic; }
+  .summary-item-indent { padding-left: 16px; }
+  .summary-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+  /* WEEK MODAL */
+  #week-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
+  #week-modal.open { display: flex; }
+  .week-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 28px; width: 360px; box-shadow: var(--shadow-md); }
+  .week-modal-box h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .week-modal-box label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
+  .week-modal-box input { width: 100%; padding: 8px 10px; font-size: 14px; font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 12px; }
+  .week-modal-box input:focus { border-color: var(--accent); }
+  .carry-over-row { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; user-select: none; font-size: 12.5px; color: var(--text); }
+  .carry-over-row:hover { border-color: var(--accent); }
+  .carry-over-row input[type="checkbox"] { width: auto; margin: 0; padding: 0; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+  .carry-over-row strong { color: var(--text); font-weight: 600; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+
+  /* SEARCH MODAL */
+  #search-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 250; align-items: flex-start; justify-content: center; padding: 80px 24px 24px; }
+  #search-modal.open { display: flex; }
+  .search-modal-box { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); width: 100%; max-width: 640px; max-height: calc(100vh - 120px); display: flex; flex-direction: column; overflow: hidden; }
+  .search-input-row { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .search-input-icon { color: var(--text3); display: inline-flex; align-items: center; }
+  #search-input { flex: 1; font-size: 15px; font-family: var(--font); border: none; outline: none; background: transparent; color: var(--text); padding: 0; }
+  #search-input::placeholder { color: var(--text3); }
+  #search-input::-webkit-search-cancel-button { cursor: pointer; }
+  .search-kbd { font-family: var(--mono); font-size: 10.5px; padding: 2px 7px; border: 1px solid var(--border); border-radius: 4px; color: var(--text3); background: var(--surface2); }
+  .search-results { flex: 1; overflow-y: auto; padding: 8px 0 12px; }
+  .search-empty, .search-no-results { padding: 32px 24px; text-align: center; color: var(--text3); font-size: 13px; }
+  .search-week-group { padding: 4px 0 8px; }
+  .search-week-label { padding: 8px 20px 4px; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); font-family: var(--mono); }
+  .search-result-item { padding: 10px 20px; cursor: pointer; transition: background 0.1s, border-color 0.1s; border-left: 3px solid transparent; }
+  .search-result-item:hover { background: var(--surface2); border-left-color: var(--accent); }
+  .search-breadcrumb { font-size: 11px; color: var(--text3); margin-bottom: 3px; line-height: 1.4; }
+  .search-task-label { font-size: 13.5px; color: var(--text); line-height: 1.4; }
+  .search-task-label.done { text-decoration: line-through; color: var(--text3); }
+  .search-task-note { font-size: 12px; color: var(--text2); margin-top: 4px; font-style: italic; line-height: 1.5; }
+  .search-task-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .search-task-tags .tag-pill { pointer-events: none; }
+  mark.search-hl { background: var(--accent-bg); color: var(--accent); padding: 1px 3px; border-radius: 3px; font-weight: 600; }
+
+  /* Subtle persistent highlight on the task you jumped to from search.
+     Uses the current theme's accent tint so it adapts to the chosen palette.
+     Applied to the whole .task-item so it encompasses the row, tags, AND note.
+     Stays until the next renderChecklist (any edit/toggle clears it naturally).
+     position+z-index lets the highlight paint above the indent guide line. */
+  .task-item.search-highlighted { background: var(--accent-bg); border-radius: var(--radius); transition: background 0.4s ease; position: relative; z-index: 1; }
+  .task-item.search-highlighted:hover { background: var(--accent-bg); }
+
+  /* TAG INPUT */
+  #tag-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 300; align-items: center; justify-content: center; }
+  #tag-modal.open { display: flex; }
+  .tag-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; width: 300px; box-shadow: var(--shadow-md); }
+  .tag-modal-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .tag-modal-box input { width: 100%; padding: 8px 10px; font-size: 14px; font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 10px; }
+  .tag-modal-box input:focus { border-color: var(--accent); }
+  .tag-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tag-suggestion { font-size: 12px; background: var(--tag-bg); color: var(--tag-text); padding: 3px 10px; border-radius: 99px; cursor: pointer; border: none; font-family: var(--font); }
+  .tag-suggestion:hover { background: var(--accent-bg); color: var(--accent); }
+
+  /* PRINT */
+  @media print {
+    body { background: white; color: black; }
+    #sidebar, #header, #summary-panel .summary-footer, .summary-header button, #theme-popover { display: none !important; }
+    #summary-panel { position: static; background: none; padding: 0; display: block !important; }
+    .summary-box { max-height: none; box-shadow: none; border: none; }
+    #summary-para { border: none; background: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="sidebar-top">
+    <div class="app-name">Weekly Tracker</div>
+    <div class="sidebar-actions">
+      <button onclick="openNewWeekModal()"><span data-icon="plus" data-icon-size="12"></span> New Week</button>
+    </div>
+  </div>
+  <div class="weeks-list" id="weeks-list"></div>
+  <div class="sidebar-bottom">
+    <div class="sidebar-bottom-left">
+      <button class="dark-toggle" onclick="toggleDark()" id="dark-btn"><span id="dark-btn-icon"></span> <span id="dark-btn-label">Dark</span></button>
+      <div class="theme-btn-wrap">
+        <button class="data-btn" onclick="toggleThemePicker(event)" title="Change theme color"><span data-icon="palette"></span></button>
+        <div class="theme-popover" id="theme-popover"></div>
+      </div>
+    </div>
+    <div class="data-btns">
+      <button class="data-btn" onclick="exportData()" title="Export all data to a backup file"><span data-icon="download"></span></button>
+      <button class="data-btn" onclick="document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload"></span></button>
+    </div>
+    <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
+  </div>
+</nav>
+
+<div id="main">
+  <div id="header">
+    <div class="week-title-area">
+      <div class="week-title" id="week-title">Select or create a week</div>
+      <div class="week-subtitle" id="week-subtitle"></div>
+    </div>
+    <div class="progress-ring-wrap">
+      <div class="progress-text" id="progress-text"></div>
+    </div>
+    <div class="header-btns">
+      <button class="btn btn-icon" onclick="openSearchModal()" title="Search (Ctrl+K)"><span data-icon="search"></span></button>
+      <button class="btn btn-accent" id="summary-btn" onclick="openSummary()" style="display:none;"><span data-icon="clipboard"></span> Summary</button>
+    </div>
+  </div>
+  <div id="content">
+    <div class="empty-state" id="empty-state">
+      <p style="margin-bottom:14px;color:var(--text3);"><span data-icon="clipboard" data-icon-size="40"></span></p>
+      <p>Create a new week to get started.</p>
+      <button class="btn btn-accent" onclick="openNewWeekModal()"><span data-icon="plus"></span> New Week</button>
+    </div>
+    <!-- Shortlist section: appears above the main list; contains all tasks
+         starred as being "for today". Rendered from the same underlying
+         tasks, so toggling done/star state anywhere keeps both in sync. -->
+    <div id="shortlist" class="shortlist" style="display:none;">
+      <div class="shortlist-header">Today's Shortlist</div>
+      <ul class="shortlist-items" id="shortlist-items"></ul>
+    </div>
+    <ul class="checklist" id="checklist" style="display:none;"></ul>
+    <button class="add-root-btn" id="add-root-btn" onclick="addRootTask()" style="display:none;">
+      <span data-icon="plus" data-icon-size="16"></span> Add task
+    </button>
+  </div>
+</div>
+
+<!-- SUMMARY PANEL -->
+<div id="summary-panel">
+  <div class="summary-box">
+    <div class="summary-header">
+      <h2 id="summary-title">Week Summary</h2>
+      <button class="task-btn" onclick="closeSummary()" style="opacity:0.6;"><span data-icon="x" data-icon-size="16"></span></button>
+    </div>
+    <div class="summary-body">
+      <div class="summary-label">Summary paragraph</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn btn-sm" id="gen-btn" onclick="generateSummary()">✦ Draft summary</button>
+        <span id="gen-status" style="font-size:12px;color:var(--text3);align-self:center;"></span>
+      </div>
+      <textarea id="summary-para" placeholder="Write or generate a summary paragraph here..."></textarea>
+      <div class="summary-checklist" id="summary-checklist"></div>
+    </div>
+    <div class="summary-footer">
+      <button class="btn btn-sm" onclick="copyAll()">Copy All</button>
+      <button class="btn btn-sm btn-accent" onclick="printSummary()">Export PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW WEEK MODAL -->
+<div id="week-modal">
+  <div class="week-modal-box">
+    <h2 id="week-modal-title">New Week</h2>
+    <label>Week label (e.g. "Week of May 26")</label>
+    <input type="text" id="week-label-input" placeholder="Week of May 26" />
+    <label>Date range</label>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+      <input type="date" id="week-start-input" style="flex:1;margin-bottom:0;" />
+      <span style="color:var(--text3);font-size:13px;">–</span>
+      <input type="date" id="week-end-input" style="flex:1;margin-bottom:0;" />
+    </div>
+    <label id="carry-over-row" class="carry-over-row" style="display:none;">
+      <input type="checkbox" id="carry-over-checkbox" />
+      <span>Carry over uncompleted tasks from <strong id="carry-over-source"></strong></span>
+    </label>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeWeekModal()">Cancel</button>
+      <button class="btn btn-accent" id="week-modal-save-btn" onclick="saveWeekModal()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH MODAL -->
+<div id="search-modal">
+  <div class="search-modal-box">
+    <div class="search-input-row">
+      <span class="search-input-icon" data-icon="search" data-icon-size="15"></span>
+      <input type="search" id="search-input" placeholder="Search tasks, notes, and tags across all weeks…" autocomplete="off" oninput="runSearch(this.value)" />
+      <kbd class="search-kbd">esc</kbd>
+    </div>
+    <div class="search-results" id="search-results">
+      <div class="search-empty">Type to search across all weeks…</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAG MODAL -->
+<div id="tag-modal">
+  <div class="tag-modal-box">
+    <h3>Add tag</h3>
+    <input type="text" id="tag-input" placeholder="Type a tag..." onkeydown="if(event.key==='Enter')saveTag()" />
+    <div class="tag-suggestions" id="tag-suggestions"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-sm" onclick="closeTagModal()">Cancel</button>
+      <button class="btn btn-sm btn-accent" onclick="saveTag()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── ICONS ────────────────────────────────────────────────────────────────────
+// Lucide-style stroke icons. All use the same 24x24 viewBox + currentColor stroke
+// for consistent visual weight. Call icon(name) or icon(name, size).
+const ICON_PATHS = {
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  grip: '<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>',
+  pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  tag: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
+  search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
+  'chevron-right': '<polyline points="9 6 15 12 9 18"/>',
+  'chevron-left': '<polyline points="15 6 9 12 15 18"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'
+};
+function icon(name, size) {
+  size = size || 14;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0;">${ICON_PATHS[name]||''}</svg>`;
+}
+// Hydrate any <span data-icon="name"> placeholders in static HTML
+function hydrateStaticIcons() {
+  document.querySelectorAll('[data-icon]').forEach(el => {
+    const n = el.getAttribute('data-icon');
+    const s = parseInt(el.getAttribute('data-icon-size') || '14', 10);
+    el.innerHTML = icon(n, s);
+  });
+}
+
+// ─── THEMES ───────────────────────────────────────────────────────────────────
+// Each theme defines accent colors for both light and dark mode so the warm
+// aesthetic holds in either mode. {a: accent, bg: accent-bg, h: accent-hover}
+const THEMES = {
+  forest:    { name: 'Forest',     light: { a: '#2d6a4f', bg: '#e8f5ee', h: '#245a42' }, dark: { a: '#4ade80', bg: '#0f2b1a', h: '#3abf6e' } },
+  terracotta:{ name: 'Terracotta', light: { a: '#b85742', bg: '#fae8e3', h: '#9d4838' }, dark: { a: '#fb923c', bg: '#2a1610', h: '#e8822c' } },
+  goldenrod: { name: 'Goldenrod',  light: { a: '#a8780f', bg: '#fbf3dc', h: '#8e640a' }, dark: { a: '#fbbf24', bg: '#2a2010', h: '#e8aa1a' } },
+  burgundy:  { name: 'Burgundy',   light: { a: '#8b3a4a', bg: '#f5e6ea', h: '#742f3d' }, dark: { a: '#f87171', bg: '#2a1014', h: '#e85b5b' } },
+  plum:      { name: 'Plum',       light: { a: '#6b3a7c', bg: '#f0e6f3', h: '#582e69' }, dark: { a: '#c4a3f0', bg: '#1c1228', h: '#a888d8' } },
+  rose:      { name: 'Rose',       light: { a: '#c46a87', bg: '#fbeaef', h: '#a85770' }, dark: { a: '#f9a8d4', bg: '#2a1620', h: '#e89cc1' } },
+  coffee:    { name: 'Coffee',     light: { a: '#6b4a3a', bg: '#f0e6dc', h: '#5a3d30' }, dark: { a: '#c89a82', bg: '#221813', h: '#b08868' } }
+};
+
+let currentTheme = localStorage.getItem('wt_theme') || 'forest';
+if (!THEMES[currentTheme]) currentTheme = 'forest';
+
+function applyTheme(themeKey) {
+  const theme = THEMES[themeKey] || THEMES.forest;
+  const mode = document.body.classList.contains('dark') ? 'dark' : 'light';
+  const c = theme[mode];
+  const root = document.documentElement;
+  root.style.setProperty('--accent', c.a);
+  root.style.setProperty('--accent-bg', c.bg);
+  root.style.setProperty('--accent-hover', c.h);
+  currentTheme = themeKey;
+  localStorage.setItem('wt_theme', themeKey);
+  renderThemePicker();
+}
+
+function renderThemePicker() {
+  const el = document.getElementById('theme-popover');
+  if (!el) return;
+  const mode = document.body.classList.contains('dark') ? 'dark' : 'light';
+  el.innerHTML = Object.entries(THEMES).map(([key, theme]) => {
+    const swatchColor = theme[mode].a;
+    return `<button
+      class="theme-swatch ${key === currentTheme ? 'active' : ''}"
+      style="background:${swatchColor};"
+      onclick="applyTheme('${key}'); event.stopPropagation();"
+      title="${theme.name}"
+      aria-label="${theme.name}"
+    ></button>`;
+  }).join('');
+}
+
+function toggleThemePicker(e) {
+  e.stopPropagation();
+  const popover = document.getElementById('theme-popover');
+  if (!popover) return;
+  const isOpen = popover.classList.contains('open');
+  if (isOpen) {
+    popover.classList.remove('open');
+    return;
+  }
+  // Position above the palette button using fixed positioning (so it isn't
+  // clipped by the sidebar's overflow:hidden). translateY(-100%) lifts the
+  // popover up by its own height so it sits above the button.
+  const button = e.currentTarget;
+  if (button && button.getBoundingClientRect) {
+    const rect = button.getBoundingClientRect();
+    popover.style.left = rect.left + 'px';
+    popover.style.top = (rect.top - 8) + 'px';
+    popover.style.transform = 'translateY(-100%)';
+  }
+  popover.classList.add('open');
+}
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = { weeks: [], currentWeekId: null };
+let tagModalTarget = null;
+let dragSrc = null;
+let shortlistDragSrc = null;  // task id being dragged inside Today's Shortlist
+let pendingDeleteId = null;  // task id whose delete confirmation is currently showing
+
+function save() {
+  localStorage.setItem('wt_state', JSON.stringify(state));
+}
+function load() {
+  const raw = localStorage.getItem('wt_state');
+  if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+load();
+if (localStorage.getItem('wt_dark') === '1') document.body.classList.add('dark');
+hydrateStaticIcons();
+applyTheme(currentTheme);
+updateDarkBtn();
+renderSidebar();
+if (state.currentWeekId) {
+  const w = state.weeks.find(w => w.id === state.currentWeekId);
+  if (w) selectWeek(w.id, false);
+}
+
+// ─── IDs ─────────────────────────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2,9); }
+
+// ─── DARK MODE ───────────────────────────────────────────────────────────────
+function toggleDark() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('wt_dark', document.body.classList.contains('dark') ? '1' : '0');
+  updateDarkBtn();
+  applyTheme(currentTheme); // re-apply so accent colors switch to dark-mode variant
+}
+function updateDarkBtn() {
+  const isDark = document.body.classList.contains('dark');
+  const btn = document.getElementById('dark-btn');
+  btn.innerHTML = icon(isDark ? 'sun' : 'moon', 13) + ' <span>' + (isDark ? 'Light' : 'Dark') + '</span>';
+}
+
+// ─── SEARCH ──────────────────────────────────────────────────────────────────
+function openSearchModal() {
+  // Close other popovers/menus if they happen to be open
+  closeAllWeekMenus();
+  const tp = document.getElementById('theme-popover');
+  if (tp) tp.classList.remove('open');
+
+  const input = document.getElementById('search-input');
+  input.value = '';
+  document.getElementById('search-results').innerHTML = '<div class="search-empty">Type to search across all weeks…</div>';
+  document.getElementById('search-modal').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeSearchModal() {
+  document.getElementById('search-modal').classList.remove('open');
+}
+
+// Run a live search across all weeks. Matches against task labels, notes,
+// and tags (case-insensitive substring). Results are grouped by week and
+// most-recent-first.
+function runSearch(query) {
+  const resultsEl = document.getElementById('search-results');
+  const q = (query || '').toLowerCase().trim();
+
+  if (!q) {
+    resultsEl.innerHTML = '<div class="search-empty">Type to search across all weeks…</div>';
+    return;
+  }
+
+  const allResults = [];
+  state.weeks.forEach(week => {
+    const weekMatches = [];
+    function walk(tasks, parents) {
+      tasks.forEach(task => {
+        const matched = [];
+        if ((task.label || '').toLowerCase().includes(q)) matched.push('label');
+        if ((task.note || '').toLowerCase().includes(q)) matched.push('note');
+        if ((task.tags || []).some(t => t.toLowerCase().includes(q))) matched.push('tag');
+        if (matched.length > 0) {
+          weekMatches.push({ task, parents: parents.slice(), matched });
+        }
+        if (task.children) walk(task.children, parents.concat([task]));
+      });
+    }
+    walk(week.tasks, []);
+    if (weekMatches.length > 0) allResults.push({ week, matches: weekMatches });
+  });
+
+  if (allResults.length === 0) {
+    resultsEl.innerHTML = '<div class="search-no-results">No matches for &ldquo;' + esc(query) + '&rdquo;.</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = allResults.map(({ week, matches }) => {
+    const countLabel = matches.length + ' match' + (matches.length === 1 ? '' : 'es');
+    return `<div class="search-week-group">
+      <div class="search-week-label">${esc(week.label)} · ${countLabel}</div>
+      ${matches.map(m => {
+        const crumb = m.parents.length > 0
+          ? m.parents.map(p => esc(p.label)).join(' › ')
+          : '';
+        const showNote = m.task.note && (m.matched.includes('note') || m.matched.includes('label') || m.matched.includes('tag'));
+        return `<div class="search-result-item" onclick="navigateToTask('${week.id}', '${m.task.id}')">
+          ${crumb ? `<div class="search-breadcrumb">${crumb}</div>` : ''}
+          <div class="search-task-label ${m.task.done ? 'done' : ''}">${highlightMatch(m.task.label, query)}</div>
+          ${showNote ? `<div class="search-task-note">${highlightMatch(m.task.note, query)}</div>` : ''}
+          ${(m.task.tags && m.task.tags.length) ? `<div class="search-task-tags">${m.task.tags.map(tag =>
+            `<span class="tag-pill">${highlightMatch(tag, query)}</span>`
+          ).join('')}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+// Wrap occurrences of `query` within `text` in <mark> tags. Walks the
+// original text and escapes pieces separately so highlights survive HTML
+// escaping correctly regardless of special characters in the source text.
+function highlightMatch(text, query) {
+  if (!text) return '';
+  const q = (query || '').toLowerCase();
+  if (!q) return esc(text);
+  const lower = text.toLowerCase();
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const idx = lower.indexOf(q, i);
+    if (idx === -1) { out += esc(text.slice(i)); break; }
+    if (idx > i) out += esc(text.slice(i, idx));
+    out += '<mark class="search-hl">' + esc(text.slice(idx, idx + q.length)) + '</mark>';
+    i = idx + q.length;
+  }
+  return out;
+}
+
+// Jump to the week and task that the user clicked in search results.
+// Scrolls the task into view and gives it a subtle theme-colored highlight
+// that lingers until they engage with the checklist (any edit/toggle clears it).
+function navigateToTask(weekId, taskId) {
+  closeSearchModal();
+  selectWeek(weekId);
+  setTimeout(() => {
+    // The target might be inside one or more collapsed parents. Walk up the
+    // chain and expand any that are hiding it, then re-render so the DOM
+    // actually contains the task we're about to scroll to.
+    if (expandAncestors(taskId)) renderChecklist();
+    // Clear any previous search highlight first so only one item is marked at a time
+    document.querySelectorAll('.task-item.search-highlighted').forEach(e => e.classList.remove('search-highlighted'));
+    const el = document.querySelector(`.task-item[data-id="${taskId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('search-highlighted');
+    }
+  }, 120);
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+function exportData() {
+  const payload = {
+    app: 'weekly-tracker',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state: state,
+    dark: document.body.classList.contains('dark'),
+    theme: currentTheme
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const today = new Date().toISOString().slice(0, 10);
+  a.download = `weekly-tracker-backup-${today}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function importData(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let data;
+    try {
+      data = JSON.parse(e.target.result);
+    } catch (err) {
+      alert('Could not read that file — it doesn\'t look like valid JSON.');
+      input.value = '';
+      return;
+    }
+    // Validate shape: support both new format (with state wrapper) and direct state objects
+    let importedState = null;
+    let importedDark = null;
+    if (data && data.state && Array.isArray(data.state.weeks)) {
+      importedState = data.state;
+      if (typeof data.dark === 'boolean') importedDark = data.dark;
+    } else if (data && Array.isArray(data.weeks)) {
+      // Allow direct state JSON too
+      importedState = data;
+    } else {
+      alert('That file doesn\'t look like a Weekly Tracker backup. Make sure you exported it from this app.');
+      input.value = '';
+      return;
+    }
+
+    const newCount = importedState.weeks.length;
+    const existingCount = state.weeks.length;
+    let msg = `Import ${newCount} week${newCount === 1 ? '' : 's'} from this backup?`;
+    if (existingCount > 0) {
+      msg += `\n\nThis will REPLACE your current data (${existingCount} week${existingCount === 1 ? '' : 's'} on this device). This cannot be undone — make sure you've exported a backup first if you want to keep it.`;
+    }
+    if (!confirm(msg)) { input.value = ''; return; }
+
+    state = importedState;
+    save();
+
+    if (importedDark !== null) {
+      if (importedDark) document.body.classList.add('dark');
+      else document.body.classList.remove('dark');
+      localStorage.setItem('wt_dark', importedDark ? '1' : '0');
+      updateDarkBtn();
+    }
+    if (data && data.theme && THEMES[data.theme]) {
+      applyTheme(data.theme);
+    } else {
+      // Re-apply current theme in case dark mode changed
+      applyTheme(currentTheme);
+    }
+
+    renderSidebar();
+    const current = state.currentWeekId && state.weeks.find(w => w.id === state.currentWeekId);
+    if (current) selectWeek(current.id, false);
+    else if (state.weeks.length) selectWeek(state.weeks[0].id);
+    else showEmpty();
+
+    input.value = ''; // reset so the same file can be picked again later
+  };
+  reader.onerror = () => {
+    alert('Could not read that file.');
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─── WEEK MANAGEMENT ─────────────────────────────────────────────────────────
+let editingWeekId = null; // null = create mode, otherwise editing that week
+
+// Format YYYY-MM-DD start/end into a display string like "May 26 – May 30, 2026"
+function formatWeekRange(start, end) {
+  if (!start && !end) return '';
+  if (!start) return formatSingleDate(end);
+  if (!end) return formatSingleDate(start);
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return '';
+  const sameYear = s.getFullYear() === e.getFullYear();
+  const sameMonth = sameYear && s.getMonth() === e.getMonth();
+  const year = e.getFullYear();
+  if (sameMonth) {
+    const month = s.toLocaleDateString('en-US', { month: 'long' });
+    return `${month} ${s.getDate()} – ${e.getDate()}, ${year}`;
+  }
+  if (sameYear) {
+    return `${s.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}, ${year}`;
+  }
+  return `${s.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+}
+
+function formatSingleDate(d) {
+  const date = new Date(d + 'T00:00:00');
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+// Format YYYY-MM-DD into "Week of May 26"
+function defaultLabelFromDate(d) {
+  const date = new Date(d + 'T00:00:00');
+  if (isNaN(date.getTime())) return 'Untitled Week';
+  return 'Week of ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Today as YYYY-MM-DD (in local time)
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function addDaysISO(iso, days) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function openNewWeekModal() {
+  editingWeekId = null;
+  const start = todayISO();
+  const end = addDaysISO(start, 4); // default to 5-day work week
+  document.getElementById('week-modal-title').textContent = 'New Week';
+  document.getElementById('week-modal-save-btn').textContent = 'Create';
+  document.getElementById('week-label-input').value = defaultLabelFromDate(start);
+  document.getElementById('week-start-input').value = start;
+  document.getElementById('week-end-input').value = end;
+
+  // Show carry-over option only when there's a previous week to copy from
+  const carryRow = document.getElementById('carry-over-row');
+  const carryCheckbox = document.getElementById('carry-over-checkbox');
+  carryCheckbox.checked = false; // always start unchecked
+  if (state.weeks.length > 0) {
+    document.getElementById('carry-over-source').textContent = state.weeks[0].label;
+    carryRow.style.display = 'flex';
+  } else {
+    carryRow.style.display = 'none';
+  }
+
+  document.getElementById('week-modal').classList.add('open');
+  setTimeout(() => document.getElementById('week-label-input').select(), 50);
+}
+
+function openEditWeekModal(id) {
+  closeAllWeekMenus();
+  const w = state.weeks.find(w => w.id === id);
+  if (!w) return;
+  editingWeekId = id;
+  document.getElementById('week-modal-title').textContent = 'Edit Week';
+  document.getElementById('week-modal-save-btn').textContent = 'Save';
+  document.getElementById('week-label-input').value = w.label || '';
+  document.getElementById('week-start-input').value = w.rangeStart || '';
+  document.getElementById('week-end-input').value = w.rangeEnd || '';
+  document.getElementById('carry-over-row').style.display = 'none'; // not relevant when editing
+  document.getElementById('week-modal').classList.add('open');
+  setTimeout(() => document.getElementById('week-label-input').select(), 50);
+}
+
+function closeWeekModal() {
+  document.getElementById('week-modal').classList.remove('open');
+  editingWeekId = null;
+}
+
+function saveWeekModal() {
+  const label = document.getElementById('week-label-input').value.trim() || 'Untitled Week';
+  const rangeStart = document.getElementById('week-start-input').value;
+  const rangeEnd = document.getElementById('week-end-input').value;
+  const range = formatWeekRange(rangeStart, rangeEnd);
+
+  if (editingWeekId) {
+    const w = state.weeks.find(w => w.id === editingWeekId);
+    if (w) {
+      w.label = label;
+      w.range = range;
+      w.rangeStart = rangeStart;
+      w.rangeEnd = rangeEnd;
+    }
+    save();
+    closeWeekModal();
+    renderSidebar();
+    if (state.currentWeekId === editingWeekId) {
+      document.getElementById('week-title').textContent = label;
+      document.getElementById('week-subtitle').textContent = range;
+    }
+    editingWeekId = null;
+  } else {
+    // Capture carry-over preference BEFORE we unshift the new week onto state.weeks
+    // (otherwise state.weeks[0] would be the brand-new empty week, not the previous one).
+    const carryCheckbox = document.getElementById('carry-over-checkbox');
+    const carryOver = carryCheckbox && carryCheckbox.checked && state.weeks.length > 0;
+    const carriedTasks = carryOver ? copyUncompletedTasks(state.weeks[0].tasks) : [];
+    const week = { id: uid(), label, range, rangeStart, rangeEnd, tasks: carriedTasks, createdAt: Date.now() };
+    state.weeks.unshift(week);
+    save();
+    closeWeekModal();
+    selectWeek(week.id);
+    renderSidebar();
+  }
+}
+
+function deleteWeek(id) {
+  closeAllWeekMenus();
+  const w = state.weeks.find(w => w.id === id);
+  if (!w) return;
+  if (!confirm('Delete "' + w.label + '"? This cannot be undone.')) return;
+  state.weeks = state.weeks.filter(w => w.id !== id);
+  if (state.currentWeekId === id) {
+    state.currentWeekId = state.weeks.length ? state.weeks[0].id : null;
+  }
+  save();
+  renderSidebar();
+  if (state.currentWeekId) selectWeek(state.currentWeekId, false);
+  else showEmpty();
+}
+
+function toggleWeekMenu(e, id) {
+  e.stopPropagation();
+  const popover = document.getElementById('week-menu-' + id);
+  const isOpen = popover && popover.classList.contains('open');
+  closeAllWeekMenus();
+  if (popover && !isOpen) popover.classList.add('open');
+}
+
+function closeAllWeekMenus() {
+  document.querySelectorAll('.week-menu-popover.open').forEach(p => p.classList.remove('open'));
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', () => {
+  closeAllWeekMenus();
+  const tp = document.getElementById('theme-popover');
+  if (tp) tp.classList.remove('open');
+});
+
+function showEmpty() {
+  document.getElementById('empty-state').style.display = '';
+  document.getElementById('checklist').style.display = 'none';
+  document.getElementById('add-root-btn').style.display = 'none';
+  document.getElementById('summary-btn').style.display = 'none';
+  document.getElementById('week-title').textContent = 'Select or create a week';
+  document.getElementById('week-subtitle').textContent = '';
+  document.getElementById('progress-text').textContent = '';
+}
+
+function selectWeek(id, doSave = true) {
+  state.currentWeekId = id;
+  if (doSave) save();
+  renderSidebar();
+  const week = state.weeks.find(w => w.id === id);
+  if (!week) return;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('checklist').style.display = '';
+  document.getElementById('add-root-btn').style.display = '';
+  document.getElementById('summary-btn').style.display = '';
+  document.getElementById('week-title').textContent = week.label;
+  document.getElementById('week-subtitle').textContent = week.range || '';
+  renderChecklist();
+  updateProgress();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('weeks-list');
+  if (!state.weeks.length) { list.innerHTML = '<div style="padding:16px 12px;font-size:12px;color:var(--text3);">No weeks yet.</div>'; return; }
+  list.innerHTML = state.weeks.map(w => {
+    const total = countAll(w.tasks);
+    const done = countDone(w.tasks);
+    return `<div class="week-item ${w.id === state.currentWeekId ? 'active' : ''}" onclick="selectWeek('${w.id}')">
+      <span class="week-item-label">${esc(w.label)}</span>
+      <span class="week-item-count">${done}/${total}</span>
+      <button class="week-item-menu-btn" onclick="toggleWeekMenu(event, '${w.id}')" title="More options" aria-label="Week options">${icon('more', 14)}</button>
+      <div class="week-menu-popover" id="week-menu-${w.id}" onclick="event.stopPropagation()">
+        <button class="week-menu-item" onclick="openEditWeekModal('${w.id}')">Edit</button>
+        <button class="week-menu-item danger" onclick="deleteWeek('${w.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── TASK HELPERS ─────────────────────────────────────────────────────────────
+function currentWeek() { return state.weeks.find(w => w.id === state.currentWeekId); }
+function newTask(label='') { return { id: uid(), label, done: false, note: '', tags: [], due: '', children: [] }; }
+
+// Deep-copy the uncompleted tasks from a list, preserving hierarchy. Used for
+// the "carry over" feature when creating a new week.
+//   - Skips done tasks
+//   - Preserves label, notes, and tags (context); resets due dates (time-specific)
+//   - Drops parents whose original children were all completed (the parent has
+//     no remaining work even if its own .done flag was somehow false)
+function copyUncompletedTasks(tasks) {
+  const result = [];
+  tasks.forEach(t => {
+    if (t.done) return;
+    const newChildren = t.children ? copyUncompletedTasks(t.children) : [];
+    // If the original task had children but none remain uncompleted, the work
+    // is effectively done — skip rather than carry over an empty parent.
+    if (t.children && t.children.length > 0 && newChildren.length === 0) return;
+    result.push({
+      id: uid(),
+      label: t.label,
+      done: false,
+      note: t.note || '',
+      tags: t.tags ? t.tags.slice() : [],
+      due: '',
+      children: newChildren
+    });
+  });
+  return result;
+}
+
+function countAll(tasks) {
+  let n = 0;
+  tasks.forEach(t => { n++; if (t.children) n += countAll(t.children); });
+  return n;
+}
+function countDone(tasks) {
+  let n = 0;
+  tasks.forEach(t => { if (t.done) n++; if (t.children) n += countDone(t.children); });
+  return n;
+}
+
+function findTask(tasks, id) {
+  for (const t of tasks) {
+    if (t.id === id) return t;
+    if (t.children) { const f = findTask(t.children, id); if (f) return f; }
+  }
+  return null;
+}
+
+function findParent(tasks, id, parent=null) {
+  for (const t of tasks) {
+    if (t.id === id) return parent;
+    if (t.children) {
+      const f = findParent(t.children, id, t);
+      if (f !== undefined) return f;
+    }
+  }
+  return undefined;
+}
+
+function removeTask(tasks, id) {
+  for (let i = 0; i < tasks.length; i++) {
+    if (tasks[i].id === id) { tasks.splice(i, 1); return true; }
+    if (tasks[i].children && removeTask(tasks[i].children, id)) return true;
+  }
+  return false;
+}
+
+function setAllChildren(task, done) {
+  task.done = done;
+  if (task.children) task.children.forEach(c => setAllChildren(c, done));
+}
+
+function syncParents(tasks, id) {
+  for (const t of tasks) {
+    if (t.children && t.children.length) {
+      const found = syncParents(t.children, id);
+      if (found) {
+        const allDone = t.children.every(c => c.done);
+        const anyDone = t.children.some(c => c.done);
+        t.done = allDone;
+        return true;
+      }
+    }
+    if (t.id === id) return true;
+  }
+  return false;
+}
+
+// ─── PROGRESS ────────────────────────────────────────────────────────────────
+function updateProgress() {
+  const w = currentWeek();
+  if (!w) return;
+  const total = countAll(w.tasks);
+  const done = countDone(w.tasks);
+  document.getElementById('progress-text').textContent = total ? `${done} / ${total} done` : '';
+  renderSidebar();
+}
+
+// ─── ADD / EDIT TASKS ────────────────────────────────────────────────────────
+function addRootTask() {
+  const w = currentWeek(); if (!w) return;
+  const t = newTask('New task');
+  w.tasks.push(t);
+  save();
+  renderChecklist();
+  updateProgress();
+  // Focus label
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${t.id}"] .task-label`);
+    if (el) { el.focus(); selectAll(el); }
+  }, 30);
+}
+
+function addChildTask(parentId) {
+  const w = currentWeek(); if (!w) return;
+  const parent = findTask(w.tasks, parentId);
+  if (!parent) return;
+  if (!parent.children) parent.children = [];
+  const t = newTask('New task');
+  parent.children.push(t);
+  save();
+  renderChecklist();
+  updateProgress();
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${t.id}"] .task-label`);
+    if (el) { el.focus(); selectAll(el); }
+  }, 30);
+}
+
+function selectAll(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+// ─── DELETE WITH CONFIRMATION ────────────────────────────────────────────────
+// Clicking the trash button opens a small confirmation popover under it
+// instead of deleting immediately. Green check commits; red X cancels.
+// Clicking trash again while the popover is showing also cancels.
+// (pendingDeleteId is declared at the top of the script alongside other state.)
+
+function deleteTask(id) {
+  // If the popover is already up for THIS task, treat the second click as cancel.
+  if (pendingDeleteId === id) { pendingDeleteId = null; renderChecklist(); return; }
+  // Otherwise (nothing pending, or pending on a different task) open it here.
+  pendingDeleteId = id;
+  renderChecklist();
+}
+
+function confirmDelete(id) {
+  const w = currentWeek(); if (!w) return;
+  pendingDeleteId = null;
+  removeTask(w.tasks, id);
+  save();
+  renderChecklist();
+  updateProgress();
+}
+
+function cancelDelete() {
+  pendingDeleteId = null;
+  renderChecklist();
+}
+
+// Click anywhere else on the page (outside the confirm popover and outside
+// the trash button that opened it) to dismiss the pending confirmation.
+document.addEventListener('click', (e) => {
+  if (!pendingDeleteId) return;
+  if (e.target.closest('.delete-confirm, .task-btn.danger')) return;
+  pendingDeleteId = null;
+  renderChecklist();
+});
+
+function toggleDone(id) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (!t) return;
+  const newDone = !t.done;
+  setAllChildren(t, newDone);
+  syncParents(w.tasks, id);
+  save();
+  renderChecklist();
+  updateProgress();
+}
+
+function updateLabel(id, value, isBlur) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (t) { t.label = value; save(); }
+  // Mirror the change to whichever view of this task ISN'T currently being
+  // edited, so both stay in sync in real time as the user types. On blur
+  // we re-linkify (URLs become clickable anchors); on input we escape only
+  // (linkify would clobber the caret on the currently-edited element, but
+  // for the mirror view we still want it plain-text until commit).
+  const rendered = isBlur ? linkify(value) : esc(value);
+  const mainLabel = document.querySelector(`.task-item[data-id="${id}"] .task-label`);
+  const shortlistLabel = document.querySelector(`.shortlist-item[data-id="${id}"] .shortlist-label`);
+  if (mainLabel && !mainLabel.matches(':focus')) mainLabel.innerHTML = rendered;
+  if (shortlistLabel && !shortlistLabel.matches(':focus')) shortlistLabel.innerHTML = rendered;
+  // Keep the strike-through state (data-done) fresh on both views too.
+  if (t) {
+    if (mainLabel) mainLabel.setAttribute('data-done', String(!!t.done));
+    if (shortlistLabel) shortlistLabel.setAttribute('data-done', String(!!t.done));
+  }
+}
+
+// Empty space inside the label wrapper (between/after the label text and the
+// optional note-indicator) should behave as a click-to-focus target for the
+// label. If the click actually hit the label or the indicator, their own
+// handlers deal with it; only bare-wrapper clicks route to the label focus.
+function wrapClickToFocus(event, wrap) {
+  if (event.target !== wrap) return;
+  const label = wrap.querySelector('.task-label');
+  if (label) {
+    label.focus();
+    // Place caret at end so typing continues after existing text
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+}
+
+// Clicking a link inside a contenteditable label would normally focus the
+// label first (via mousedown default), which flashes the caret and steals
+// focus from the intended navigation. Suppress that default on mousedown.
+// A separate click listener then opens the URL, because within a
+// contenteditable the browser treats clicks on anchor tags as caret
+// placement and swallows the anchor's default navigate action — we have
+// to trigger it ourselves.
+//
+// Note-link-chips are plain anchors OUTSIDE any contenteditable, so we let
+// the browser handle them natively via target="_blank". Applying the same
+// mousedown preventDefault to them was interfering with the normal
+// click-to-navigate flow in some browsers.
+document.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.task-link')) e.preventDefault();
+});
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('.task-link');
+  if (link && link.href) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(link.href, '_blank', 'noopener,noreferrer');
+  }
+});
+// Pasting into the label or note contenteditables should insert plain text
+// only. Otherwise formatted paste from Word/browsers ends up as arbitrary
+// HTML in the DOM — messes with linkification, styling, and the innerText
+// we save. We intercept, extract the plaintext, and insert it at the caret.
+document.addEventListener('paste', (e) => {
+  const t = e.target;
+  if (!t.classList || (!t.classList.contains('task-note') && !t.classList.contains('task-label') && !t.classList.contains('shortlist-label'))) return;
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  if (!text) return;
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const node = document.createTextNode(text);
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  // Fire input so the surrounding save handlers pick it up.
+  t.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+function updateNote(id, value, isBlur) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (t) { t.note = value; save(); }
+  // Show/hide the "Has a note" pencil indicator next to the title. This
+  // runs on every input, so emptying the note (or typing the first char
+  // into an empty note) updates the indicator without a full re-render.
+  const wrap = document.querySelector(`.task-item[data-id="${id}"] .task-label-wrap`);
+  if (wrap) {
+    const existing = wrap.querySelector('.note-indicator');
+    const shouldShow = value && value.trim() !== '';
+    if (shouldShow && !existing) {
+      const span = document.createElement('span');
+      span.className = 'note-indicator';
+      span.title = 'Has a note (click to toggle)';
+      span.innerHTML = icon('pencil', 13);
+      span.onclick = (e) => { e.stopPropagation(); toggleNote(id); };
+      wrap.appendChild(span);
+    } else if (!shouldShow && existing) {
+      existing.remove();
+    }
+  }
+  // On blur, re-linkify the note's DOM in place: any URLs the user typed
+  // become clickable <a> tags. Skip if still focused (would clobber the
+  // caret). Also normalize empty content so :empty::before placeholder
+  // reliably shows — contenteditable often leaves stray <br> after all
+  // text is deleted, which prevents the :empty selector from matching.
+  if (isBlur) {
+    const noteEl = document.querySelector(`[data-id="${id}"] .task-note`);
+    if (noteEl && !noteEl.matches(':focus')) {
+      noteEl.innerHTML = value && value.trim() ? linkify(value) : '';
+    }
+  }
+}
+
+function autoResizeNote(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function toggleNote(id) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (!t) return;
+  // Use the same fallback rendering uses (undefined → infer from content) so
+  // the first toggle on a pre-existing note behaves as the user expects.
+  const wasOpen = t.noteOpen !== undefined ? !!t.noteOpen : !!t.note;
+  t.noteOpen = !wasOpen;
+  save();
+  renderChecklist();
+  // If we just opened it, focus the note editor and drop the caret at the
+  // end of any existing content so the user can start typing straight away.
+  if (t.noteOpen) {
+    setTimeout(() => {
+      const noteEl = document.querySelector(`[data-id="${id}"] .task-note`);
+      if (!noteEl) return;
+      noteEl.focus();
+      const range = document.createRange();
+      range.selectNodeContents(noteEl);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }, 30);
+  }
+}
+
+// Shortlist labels are contenteditable so they can be edited in place;
+// updateLabel is wired via onblur/oninput and mirrors edits to the main
+// list. This just handles keys that should commit the edit: Enter and
+// Escape both blur the field. Structural keys (Tab, arrows) are left as
+// browser defaults inside the shortlist to avoid surprises — reordering
+// happens via drag, and hierarchy edits belong in the main list.
+function handleShortlistLabelKeydown(e) {
+  if (e.key === 'Enter' || e.key === 'Escape') {
+    e.preventDefault();
+    e.target.blur();
+  }
+}
+
+// ─── KEYBOARD TASK NAVIGATION ────────────────────────────────────────────────
+// Enter → add sibling task after current; Tab → indent (make child of previous sibling); Shift+Tab → unindent
+function handleTaskKeydown(e, id) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const label = e.target.textContent.trim();
+    updateLabel(id, label);
+    addSiblingTask(id);
+  } else if (e.key === 'Tab') {
+    e.preventDefault();
+    if (e.shiftKey) {
+      unindentTask(id);
+    } else {
+      indentTask(id);
+    }
+  } else if (e.key === 'ArrowUp') {
+    // Move to previous task's label — but only if the caret is on the
+    // first visual line of the current label (so multi-line labels can
+    // still be navigated internally with Up).
+    if (isCaretOnFirstLine(e.target)) {
+      e.preventDefault();
+      focusAdjacentTaskLabel(id, -1);
+    }
+  } else if (e.key === 'ArrowDown') {
+    if (isCaretOnLastLine(e.target)) {
+      e.preventDefault();
+      focusAdjacentTaskLabel(id, 1);
+    }
+  }
+}
+
+// Walk the DOM in visual order (the query selector returns rendered items
+// only — collapsed parents' children are excluded automatically) and focus
+// the label of the task adjacent to `currentId` in the given direction.
+// direction: -1 for previous, +1 for next.
+function focusAdjacentTaskLabel(currentId, direction) {
+  const allItems = Array.from(document.querySelectorAll('.task-item'));
+  const idx = allItems.findIndex(el => el.dataset.id === currentId);
+  if (idx === -1) return;
+  const target = allItems[idx + direction];
+  if (!target) return;
+  const targetLabel = target.querySelector('.task-label');
+  if (!targetLabel) return;
+  targetLabel.focus();
+  // Place caret at end when arriving from below (going Up), at start when
+  // arriving from above (going Down). Matches how a caret naturally crosses
+  // paragraph boundaries in a text editor.
+  const range = document.createRange();
+  if (direction === -1) {
+    range.selectNodeContents(targetLabel);
+    range.collapse(false);
+  } else {
+    range.setStart(targetLabel, 0);
+    range.collapse(true);
+  }
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  // Keep the target in view if it's scrolled off-screen
+  targetLabel.closest('.task-item').scrollIntoView({ block: 'nearest' });
+}
+
+// Compare the caret's y-position to the containing element's top/bottom.
+// If it's within roughly half a line-height, it's on the first/last visual
+// line — meaning an ArrowUp/Down should exit to the neighboring task rather
+// than move within the label. Handles the empty-label case (zero-size rect).
+function isCaretOnFirstLine(el) {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return true;
+  const range = sel.getRangeAt(0);
+  if (!range.collapsed) return false;
+  const caret = range.getBoundingClientRect();
+  const box = el.getBoundingClientRect();
+  if (caret.top === 0 && caret.bottom === 0) return true;
+  const lh = parseFloat(getComputedStyle(el).lineHeight) || 20;
+  return caret.top - box.top < lh * 0.75;
+}
+function isCaretOnLastLine(el) {
+  const sel = window.getSelection();
+  if (sel.rangeCount === 0) return true;
+  const range = sel.getRangeAt(0);
+  if (!range.collapsed) return false;
+  const caret = range.getBoundingClientRect();
+  const box = el.getBoundingClientRect();
+  if (caret.top === 0 && caret.bottom === 0) return true;
+  const lh = parseFloat(getComputedStyle(el).lineHeight) || 20;
+  return box.bottom - caret.bottom < lh * 0.75;
+}
+
+// Add a new task at the same level, right after the given task
+function addSiblingTask(id) {
+  const w = currentWeek(); if (!w) return;
+  const info = findListContaining(w.tasks, id);
+  if (!info) return;
+  const t = newTask('');
+  info.list.splice(info.index + 1, 0, t);
+  save();
+  renderChecklist();
+  updateProgress();
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${t.id}"] .task-label`);
+    if (el) { el.focus(); }
+  }, 30);
+}
+
+// Click the chevron handle on a parent task to show/hide its children.
+// The collapsed flag persists with the task in localStorage.
+function toggleCollapse(id) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (!t) return;
+  t.collapsed = !t.collapsed;
+  save();
+  renderChecklist();
+}
+
+// Walk up from a task and force every ancestor to be expanded.
+// Used when jumping to a search result that might be inside collapsed parents.
+function expandAncestors(id) {
+  const w = currentWeek(); if (!w) return;
+  let changed = false;
+  let parent = findParent(w.tasks, id);
+  while (parent) {
+    if (parent.collapsed) { parent.collapsed = false; changed = true; }
+    parent = findParent(w.tasks, parent.id);
+  }
+  if (changed) save();
+  return changed;
+}
+
+// Tab: make current task a child of the task immediately above it (at same level)
+function indentTask(id) {
+  const w = currentWeek(); if (!w) return;
+  const info = findListContaining(w.tasks, id);
+  if (!info || info.index === 0) return; // no previous sibling
+  const prevSibling = info.list[info.index - 1];
+  const [task] = info.list.splice(info.index, 1);
+  if (!prevSibling.children) prevSibling.children = [];
+  prevSibling.children.push(task);
+  // Auto-expand the new parent so the user sees the indented task land in it.
+  prevSibling.collapsed = false;
+  save();
+  renderChecklist();
+  updateProgress();
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${id}"] .task-label`);
+    if (el) el.focus();
+  }, 30);
+}
+
+// Shift+Tab: move task out of its parent, placing it after the parent
+function unindentTask(id) {
+  const w = currentWeek(); if (!w) return;
+  // Find parent
+  const parent = findParent(w.tasks, id);
+  if (!parent) return; // already at root level
+  const parentInfo = findListContaining(w.tasks, parent.id);
+  if (!parentInfo) return;
+  const childInfo = findListContaining(parent.children, id);
+  if (!childInfo) return;
+  const [task] = parent.children.splice(childInfo.index, 1);
+  // Insert after parent in parent's list
+  parentInfo.list.splice(parentInfo.index + 1, 0, task);
+  save();
+  renderChecklist();
+  updateProgress();
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${id}"] .task-label`);
+    if (el) el.focus();
+  }, 30);
+}
+
+// ─── DUE DATES ───────────────────────────────────────────────────────────────
+function setDue(id, evt) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (!t) return;
+
+  // Reuse or create a tiny date input. It needs a non-zero rendered size or some
+  // browsers won't show the native picker; positioning it at the click target makes
+  // the picker dialog open aligned with the button instead of in the top-left corner.
+  let picker = document.getElementById('date-picker-input');
+  if (!picker) {
+    picker = document.createElement('input');
+    picker.type = 'date';
+    picker.id = 'date-picker-input';
+    picker.style.cssText = 'position:fixed; opacity:0; width:1px; height:1px; padding:0; margin:0; border:none; background:transparent;';
+    document.body.appendChild(picker);
+  }
+
+  // event.target can be the SVG icon or its child <path>; walk up to the actual
+  // button/badge so we anchor to a stable rect rather than a tiny SVG segment.
+  let target = evt && evt.currentTarget;
+  if ((!target || !target.getBoundingClientRect) && evt && evt.target && evt.target.closest) {
+    target = evt.target.closest('button, .due-badge');
+  }
+
+  if (target && target.getBoundingClientRect) {
+    const rect = target.getBoundingClientRect();
+    picker.style.left = rect.left + 'px';
+    picker.style.top = (rect.bottom + 4) + 'px';
+  }
+  // Force a layout/reflow so the input's new position is committed before
+  // showPicker reads it to position the picker dialog.
+  picker.getBoundingClientRect();
+
+  picker.value = t.due || '';
+
+  picker.onchange = () => {
+    t.due = picker.value; // YYYY-MM-DD from the input
+    save();
+    renderChecklist();
+    picker.onchange = null;
+  };
+
+  // Focus first so the picker uses this input as its anchor (some browsers
+  // anchor the popup to the focused element rather than the originating one).
+  try { picker.focus({ preventScroll: true }); } catch(e) { picker.focus(); }
+  if (typeof picker.showPicker === 'function') {
+    try { picker.showPicker(); }
+    catch(e) { picker.click(); }
+  } else {
+    picker.click();
+  }
+}
+
+function dueBadgeClass(due) {
+  if (!due) return '';
+  const d = new Date(due + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  const diff = Math.round((d - now) / 86400000);
+  if (diff < 0) return 'overdue';
+  if (diff <= 2) return 'soon';
+  return '';
+}
+
+function formatDue(due) {
+  if (!due) return '';
+  try {
+    const [y, m, d] = due.split('-');
+    return `${m}-${d}-${y}`;
+  } catch(e) { return due; }
+}
+
+// ─── TAGS ────────────────────────────────────────────────────────────────────
+function allTags() {
+  const tags = new Set();
+  state.weeks.forEach(w => {
+    function collect(tasks) { tasks.forEach(t => { (t.tags||[]).forEach(tag => tags.add(tag)); if (t.children) collect(t.children); }); }
+    collect(w.tasks);
+  });
+  return [...tags];
+}
+
+function openTagModal(id) {
+  tagModalTarget = id;
+  const suggestions = allTags();
+  document.getElementById('tag-input').value = '';
+  document.getElementById('tag-suggestions').innerHTML = suggestions.map(s =>
+    `<button class="tag-suggestion" onclick="quickTag('${esc(s)}')">${esc(s)}</button>`
+  ).join('');
+  document.getElementById('tag-modal').classList.add('open');
+  setTimeout(() => document.getElementById('tag-input').focus(), 50);
+}
+function closeTagModal() { document.getElementById('tag-modal').classList.remove('open'); tagModalTarget = null; }
+function quickTag(tag) {
+  document.getElementById('tag-input').value = tag;
+  saveTag();
+}
+function saveTag() {
+  const val = document.getElementById('tag-input').value.trim();
+  if (!val || !tagModalTarget) { closeTagModal(); return; }
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, tagModalTarget);
+  if (t) {
+    if (!t.tags) t.tags = [];
+    if (!t.tags.includes(val)) t.tags.push(val);
+    save();
+    renderChecklist();
+  }
+  closeTagModal();
+}
+function removeTag(id, tag) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (t && t.tags) { t.tags = t.tags.filter(tg => tg !== tag); save(); renderChecklist(); }
+}
+
+// ─── DRAG AND DROP ───────────────────────────────────────────────────────────
+function initDrag(el, id) {
+  el.addEventListener('dragstart', e => {
+    dragSrc = id;
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+  });
+  el.addEventListener('dragover', e => {
+    if (dragSrc === id) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+    el.classList.add('drag-over');
+  });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    if (dragSrc && dragSrc !== id) {
+      moveTask(dragSrc, id);
+      dragSrc = null;
+    }
+  });
+}
+
+function findListContaining(tasks, id) {
+  for (let i = 0; i < tasks.length; i++) {
+    if (tasks[i].id === id) return { list: tasks, index: i };
+    if (tasks[i].children) {
+      const r = findListContaining(tasks[i].children, id);
+      if (r) return r;
+    }
+  }
+  return null;
+}
+
+function moveTask(srcId, targetId) {
+  const w = currentWeek(); if (!w) return;
+  const srcInfo = findListContaining(w.tasks, srcId);
+  const tgtInfo = findListContaining(w.tasks, targetId);
+  if (!srcInfo || !tgtInfo) return;
+  const [removed] = srcInfo.list.splice(srcInfo.index, 1);
+  const newTgtInfo = findListContaining(w.tasks, targetId);
+  if (!newTgtInfo) { srcInfo.list.splice(srcInfo.index, 0, removed); return; }
+  newTgtInfo.list.splice(newTgtInfo.index, 0, removed);
+  save();
+  renderChecklist();
+  updateProgress();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// Escape non-URL text and wrap detected http(s) URLs in anchor tags that open
+// in a new tab. Used inline in task labels (which are contenteditable divs).
+// Also see extractUrls() for pulling URLs out of note text (textareas can't
+// hold inline HTML, so notes get clickable link chips rendered below them).
+function linkify(s) {
+  if (!s) return '';
+  const re = /(https?:\/\/[^\s<>"']+)/g;
+  let out = '', last = 0, m;
+  while ((m = re.exec(s)) !== null) {
+    out += esc(s.slice(last, m.index));
+    const url = m[0];
+    out += `<a class="task-link" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener noreferrer" title="Open in new tab">${esc(url)}</a>`;
+    last = m.index + url.length;
+  }
+  out += esc(s.slice(last));
+  return out;
+}
+function extractUrls(s) {
+  if (!s) return [];
+  return s.match(/(https?:\/\/[^\s<>"']+)/g) || [];
+}
+
+function renderTaskList(tasks, container, depth = 0) {
+  tasks.forEach(t => {
+    const li = document.createElement('li');
+    li.className = 'task-item';
+    if (t.id === pendingDeleteId) li.classList.add('pending-delete');
+    li.dataset.id = t.id;
+    li.draggable = true;
+    initDrag(li, t.id);
+
+    const hasChildren = t.children && t.children.length > 0;
+    const isPartial = hasChildren && t.children.some(c => c.done) && !t.children.every(c => c.done);
+    const checkClass = t.done ? 'checked' : (isPartial ? 'partial' : '');
+
+    // A task has TWO distinct "note" states:
+    //   • hasNote  — whether the task holds any note content. Drives the small
+    //     pencil indicator next to the title so users can see at a glance which
+    //     tasks have notes even when their note section is closed.
+    //   • noteOpen — whether the note section is currently displayed. This is
+    //     a PERSISTENT per-task flag that only changes when the user clicks
+    //     the note icon. Rendering the task (e.g. when expanding a parent)
+    //     doesn't reset it, so a note the user closed stays closed.
+    // For tasks predating this feature, noteOpen is undefined; we infer from
+    // content to preserve the previous "notes with content are shown" behavior.
+    // Once the user toggles explicitly, the stored flag takes over.
+    const hasNote = !!t.note;
+    const noteOpen = t.noteOpen !== undefined ? !!t.noteOpen : hasNote;
+
+    // Each task has a `collapsed` flag (default false). When collapsed, the
+    // children subtask-list isn't rendered. The toggle lives at the FAR RIGHT
+    // of the task-row, only present for tasks that actually have children.
+    const isCollapsed = !!t.collapsed;
+    const expandToggle = hasChildren
+      ? `<button class="expand-toggle" onclick="toggleCollapse('${t.id}')" title="${isCollapsed ? 'Expand' : 'Collapse'}">${icon(isCollapsed ? 'chevron-left' : 'chevron-down', 14)}</button>`
+      : '';
+
+    li.innerHTML = `
+      <div class="task-row">
+        <span class="drag-handle" title="Drag to reorder">${icon('grip', 14)}</span>
+        <div class="checkbox ${checkClass}" onclick="toggleDone('${t.id}')"></div>
+        <div class="task-label-wrap" onclick="wrapClickToFocus(event, this)">
+          <div class="task-label" contenteditable="true" data-done="${t.done}" spellcheck="false"
+            oninput="updateLabel('${t.id}', this.textContent)"
+            onblur="updateLabel('${t.id}', this.textContent.trim(), true)"
+            onkeydown="handleTaskKeydown(event, '${t.id}')"
+          >${linkify(t.label)}</div>
+          ${hasNote ? `<span class="note-indicator" onclick="event.stopPropagation(); toggleNote('${t.id}')" title="Has a note (click to toggle)">${icon('pencil', 13)}</span>` : ''}
+        </div>
+        <div class="task-controls">
+          <button class="task-btn note-btn ${noteOpen ? 'note-active' : ''}" onclick="toggleNote('${t.id}')" title="Toggle note">${icon('pencil', 13)}</button>
+          <button class="task-btn" onclick="openTagModal('${t.id}')" title="Add tag">${icon('tag', 13)}</button>
+          <button class="task-btn" onclick="setDue('${t.id}', event)" title="Set due date">${icon('calendar', 13)}</button>
+          <button class="task-btn danger" onclick="deleteTask('${t.id}')" title="Delete">${icon('trash', 13)}</button>
+        </div>
+        ${expandToggle}
+        <button class="star-toggle ${t.shortlisted ? 'starred' : ''}" onclick="toggleStar('${t.id}')" title="${t.shortlisted ? "Remove from Today's Shortlist" : "Add to Today's Shortlist"}">${icon('star', 14)}</button>
+        ${t.id === pendingDeleteId ? `
+          <div class="delete-confirm">
+            <button class="delete-confirm-btn cancel" onclick="cancelDelete()" title="Cancel">${icon('x', 13)}</button>
+            <button class="delete-confirm-btn confirm" onclick="confirmDelete('${t.id}')" title="Confirm delete">${icon('check', 13)}</button>
+          </div>
+        ` : ''}
+      </div>
+      ${(t.tags && t.tags.length) || t.due ? `
+      <div class="task-meta">
+        ${(t.tags||[]).map(tag => `<span class="tag-pill" onclick="removeTag('${t.id}','${esc(tag)}')">${esc(tag)} <span class="remove-tag">×</span></span>`).join('')}
+        ${t.due ? `<span class="due-badge ${dueBadgeClass(t.due)}" onclick="setDue('${t.id}', event)" title="Click to edit">${formatDue(t.due)}</span>` : ''}
+      </div>` : ''}
+      <div class="task-note-area" id="note-${t.id}" style="${noteOpen ? '' : 'display:none;'}">
+        <div class="task-note" contenteditable="true" data-placeholder="Add a note…" spellcheck="true"
+          oninput="updateNote('${t.id}', this.innerText)"
+          onblur="updateNote('${t.id}', this.innerText, true)"
+        >${linkify(t.note || '')}</div>
+      </div>
+    `;
+
+    container.appendChild(li);
+
+    // Render the children's subtask-list unless this task is collapsed.
+    if (hasChildren && !isCollapsed) {
+      const subUl = document.createElement('ul');
+      subUl.className = 'subtask-list checklist';
+      renderTaskList(t.children, subUl, depth + 1);
+      container.appendChild(subUl);
+    }
+  });
+}
+
+function renderChecklist() {
+  const w = currentWeek();
+  const ul = document.getElementById('checklist');
+  ul.innerHTML = '';
+  if (!w) { renderShortlist(); return; }
+  renderTaskList(w.tasks, ul, 0);
+  renderShortlist();
+}
+
+// ─── TODAY'S SHORTLIST ────────────────────────────────────────────────────────
+// A separate above-the-fold list of tasks the user has starred as being
+// "for today". Tasks are the same underlying objects as in the main tree —
+// toggling done in either place updates both, because both views hang off
+// the same t.done flag and both are re-rendered whenever anything changes.
+//
+// The user's chosen order for the top-level shortlist entries is persisted
+// per-week as w.shortlistOrder (an array of task ids). We reconcile this
+// against the live starred-tasks set on every read: stale ids drop out,
+// newly-starred tasks are appended to the end. Nested items (subtasks
+// brought along under a starred parent) always follow their parent's
+// natural tree order and aren't user-reorderable.
+function toggleStar(id) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (!t) return;
+  t.shortlisted = !t.shortlisted;
+  save();
+  renderChecklist();
+}
+
+// Walk the tree and collect the top-level shortlist entries: tasks that are
+// starred AND have no starred ancestor. A starred descendant of a starred
+// task doesn't get its own top-level entry — it appears nested under its
+// ancestor instead (so it isn't shown twice).
+function collectShortlistRoots(tasks) {
+  const roots = [];
+  (function walk(list, hasStarredAncestor) {
+    list.forEach(t => {
+      if (t.shortlisted && !hasStarredAncestor) roots.push(t);
+      if (t.children && t.children.length) {
+        walk(t.children, hasStarredAncestor || !!t.shortlisted);
+      }
+    });
+  })(tasks, false);
+  return roots;
+}
+
+// Reconcile w.shortlistOrder with the current set of starred roots and
+// return the roots sorted by that order. Mutates w.shortlistOrder: prunes
+// ids that no longer belong (unstarred, deleted, or now nested under a
+// starred ancestor) and appends any newly-starred roots at the end.
+function collectShortlistRootsOrdered(w) {
+  const roots = collectShortlistRoots(w.tasks);
+  if (!w.shortlistOrder) w.shortlistOrder = [];
+  const rootIds = new Set(roots.map(r => r.id));
+  w.shortlistOrder = w.shortlistOrder.filter(id => rootIds.has(id));
+  roots.forEach(r => { if (!w.shortlistOrder.includes(r.id)) w.shortlistOrder.push(r.id); });
+  const orderIdx = new Map(w.shortlistOrder.map((id, i) => [id, i]));
+  roots.sort((a, b) => orderIdx.get(a.id) - orderIdx.get(b.id));
+  return roots;
+}
+
+// Move the root with id `fromId` to just before the root with id `toId`
+// in the current week's shortlistOrder. Both must already be roots.
+function moveShortlistItemBefore(fromId, toId) {
+  const w = currentWeek(); if (!w) return;
+  collectShortlistRootsOrdered(w);  // ensure order array is up to date
+  const fromIdx = w.shortlistOrder.indexOf(fromId);
+  if (fromIdx === -1) return;
+  const [item] = w.shortlistOrder.splice(fromIdx, 1);
+  const newToIdx = w.shortlistOrder.indexOf(toId);
+  if (newToIdx === -1) return;
+  w.shortlistOrder.splice(newToIdx, 0, item);
+  save();
+  renderShortlist();
+}
+
+// HTML5 drag/drop wiring for a root shortlist item. Uses its own drag
+// source variable (not the main-list dragSrc) so mid-drag state can't
+// bleed between the two lists.
+function initShortlistDrag(el, id) {
+  el.addEventListener('dragstart', (e) => {
+    shortlistDragSrc = id;
+    e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('dragging');
+    e.stopPropagation();
+  });
+  el.addEventListener('dragover', (e) => {
+    if (!shortlistDragSrc || shortlistDragSrc === id) return;
+    e.preventDefault();
+    el.classList.add('drag-over');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.remove('drag-over');
+    if (shortlistDragSrc && shortlistDragSrc !== id) moveShortlistItemBefore(shortlistDragSrc, id);
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    document.querySelectorAll('.shortlist-item.drag-over').forEach(x => x.classList.remove('drag-over'));
+    shortlistDragSrc = null;
+  });
+}
+
+// Starring a task pulls its entire subtree into the shortlist, but those
+// subtrees start collapsed so the shortlist stays compact. This flag is
+// separate from the main-list `collapsed` flag so users can have a task
+// expanded in the main list but folded up in the shortlist (and vice versa).
+// Undefined is treated as collapsed, so freshly-starred parents are folded
+// by default without needing a migration.
+function toggleShortlistCollapse(id) {
+  const w = currentWeek(); if (!w) return;
+  const t = findTask(w.tasks, id);
+  if (!t) return;
+  const wasCollapsed = t.shortlistCollapsed !== undefined ? !!t.shortlistCollapsed : true;
+  t.shortlistCollapsed = !wasCollapsed;
+  save();
+  renderShortlist();
+}
+
+// Recursive renderer for shortlist entries. Only individually-starred tasks
+// show a star (clickable to unstar and remove them from the shortlist);
+// brought-along descendants have no star since their presence is derived
+// from an ancestor's shortlisted flag. Every item with children gets an
+// expand chevron that toggles just its own shortlist collapse state.
+// Only root-level items (isRoot=true) are draggable — nested items follow
+// their parent's tree order.
+function renderShortlistItems(tasks, container, isRoot) {
+  tasks.forEach(t => {
+    const hasChildren = t.children && t.children.length > 0;
+    const isPartial = hasChildren && t.children.some(c => c.done) && !t.children.every(c => c.done);
+    const checkClass = t.done ? 'checked' : (isPartial ? 'partial' : '');
+    const isCollapsed = t.shortlistCollapsed !== undefined ? !!t.shortlistCollapsed : true;
+    const starHtml = t.shortlisted
+      ? `<button class="star-toggle starred" onclick="toggleStar('${t.id}')" title="Remove from Today's Shortlist">${icon('star', 14)}</button>`
+      : '';
+    const chevronHtml = hasChildren
+      ? `<button class="expand-toggle" onclick="toggleShortlistCollapse('${t.id}')" title="${isCollapsed ? 'Expand' : 'Collapse'}">${icon(isCollapsed ? 'chevron-left' : 'chevron-down', 14)}</button>`
+      : '';
+    const gripHtml = isRoot
+      ? `<span class="drag-handle" title="Drag to reorder">${icon('grip', 14)}</span>`
+      : '';
+    const li = document.createElement('li');
+    li.className = 'shortlist-item';
+    li.dataset.id = t.id;
+    // Force indent via inline style for nested items. In some rendering paths
+    // the CSS rule .shortlist-subitems > .shortlist-item { padding-left: 24px }
+    // appears applied in DevTools but doesn't visually shift the row, so we
+    // hard-code it as an inline padding-left. Root items get no inline padding.
+    if (!isRoot) {
+      li.style.paddingLeft = '24px';
+    }
+    if (isRoot) {
+      li.draggable = true;
+      initShortlistDrag(li, t.id);
+    }
+    li.innerHTML = `
+      <div class="shortlist-item-row">
+        ${gripHtml}
+        <div class="checkbox ${checkClass}" onclick="toggleDone('${t.id}')"></div>
+        <div class="shortlist-label" contenteditable="true" data-done="${t.done}" spellcheck="false"
+          oninput="updateLabel('${t.id}', this.textContent)"
+          onblur="updateLabel('${t.id}', this.textContent.trim(), true)"
+          onkeydown="handleShortlistLabelKeydown(event)"
+        >${linkify(t.label)}</div>
+        ${chevronHtml}
+        ${starHtml}
+      </div>
+    `;
+    container.appendChild(li);
+    if (hasChildren && !isCollapsed) {
+      const subUl = document.createElement('ul');
+      subUl.className = 'shortlist-subitems';
+      renderShortlistItems(t.children, subUl, false);
+      // Append the nested list INSIDE the LI (not as a sibling in container).
+      // Sibling ul-in-ul is invalid HTML and browsers render it inconsistently;
+      // nesting the ul inside the parent li is the correct list structure, and
+      // has the added bonus that dragging a root item visually carries its
+      // whole subtree in the drag preview.
+      li.appendChild(subUl);
+    }
+  });
+}
+
+function renderShortlist() {
+  const box = document.getElementById('shortlist');
+  const list = document.getElementById('shortlist-items');
+  const w = currentWeek();
+  if (!w) { box.style.display = 'none'; return; }
+  const roots = collectShortlistRootsOrdered(w);
+  if (roots.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  list.innerHTML = '';
+  renderShortlistItems(roots, list, true);
+}
+
+// ─── SUMMARY ──────────────────────────────────────────────────────────────────
+function openSummary() {
+  const w = currentWeek(); if (!w) return;
+  document.getElementById('summary-title').textContent = w.label + ' — Summary';
+  document.getElementById('summary-panel').classList.add('open');
+  renderSummaryChecklist();
+  if (!document.getElementById('summary-para').value) {
+    document.getElementById('gen-status').textContent = 'Click "Draft with AI" to generate a summary.';
+  }
+}
+function closeSummary() { document.getElementById('summary-panel').classList.remove('open'); }
+
+function renderSummaryChecklist() {
+  const w = currentWeek(); if (!w) return;
+  const el = document.getElementById('summary-checklist');
+  let html = '';
+  function walk(tasks, depth) {
+    tasks.forEach(t => {
+      // Show ALL tasks for holistic context — completed are highlighted with a check
+      // icon, uncompleted appear with an empty box and faded text. The print stylesheet
+      // hides .undone items so PDF exports stay accomplishments-only.
+      const stateClass = t.done ? 'done' : 'undone';
+      const checkContent = t.done ? icon('check', 13) : '';
+      html += `<div class="summary-item ${stateClass} ${depth > 0 ? 'summary-item-indent' : ''}" style="${depth > 1 ? 'padding-left:'+(depth*16)+'px' : ''}">
+        <span class="summary-check">${checkContent}</span>
+        <div class="summary-item-text">
+          <div>${esc(t.label)}</div>
+          ${t.note ? `<div class="summary-item-note">${esc(t.note)}</div>` : ''}
+          ${(t.tags||[]).length ? `<div style="margin-top:3px;">${t.tags.map(tag=>`<span class="tag-pill" style="pointer-events:none">${esc(tag)}</span>`).join(' ')}</div>` : ''}
+        </div>
+      </div>`;
+      if (t.children) walk(t.children, depth + 1);
+    });
+  }
+  walk(w.tasks, 0);
+  el.innerHTML = html || '<p style="color:var(--text3);font-size:13px;">No tasks yet.</p>';
+}
+
+async function generateSummary() {
+  const w = currentWeek(); if (!w) return;
+  const btn = document.getElementById('gen-btn');
+  const status = document.getElementById('gen-status');
+  const para = document.getElementById('summary-para');
+
+  // Group completed work by top-level workstream.
+  // Each top-level task becomes a "workstream" if it (or any descendant) was completed.
+  const workstreams = [];
+  w.tasks.forEach(top => {
+    const completedDescendants = [];
+    function collectDescendants(task) {
+      if (task.children) {
+        task.children.forEach(c => {
+          if (c.done) completedDescendants.push(c);
+          collectDescendants(c);
+        });
+      }
+    }
+    collectDescendants(top);
+    if (top.done || completedDescendants.length > 0) {
+      workstreams.push({
+        name: top.label,
+        topDone: top.done,
+        topNote: top.note || '',
+        descendants: completedDescendants
+      });
+    }
+  });
+
+  if (workstreams.length === 0) {
+    status.textContent = 'No completed items to summarize.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.textContent = 'Drafting…';
+
+  // Small async delay so the user sees the status change (feels intentional)
+  await new Promise(r => setTimeout(r, 200));
+
+  const paragraph = buildSummaryParagraph(w, workstreams);
+  para.value = paragraph;
+  status.textContent = 'Draft ready — edit as needed.';
+  btn.disabled = false;
+}
+
+// Natural-language list joiner: ["a", "b", "c"] -> "a, b, and c"
+function joinList(items) {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return items[0] + ' and ' + items[1];
+  return items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
+}
+
+// Lowercase first letter unless it looks like a proper noun (starts with uppercase
+// AND the word is capitalized in a way that suggests a name, e.g. "Brad" stays).
+// Simple heuristic: keep as-is if the word starts with an uppercase letter followed
+// by lowercase letters AND it's not a common sentence-starter word.
+function preserveCase(s) { return s; }
+
+function buildSummaryParagraph(week, workstreams) {
+  const totalItems = workstreams.reduce((sum, ws) => sum + (ws.topDone ? 1 : 0) + ws.descendants.length, 0);
+  const sentences = [];
+
+  // Intro sentence
+  const weekLabel = week.range ? `the week of ${week.range.split('–')[0].trim()}` : 'this week';
+  if (workstreams.length === 1) {
+    sentences.push(`This week, work focused on ${workstreams[0].name}.`);
+  } else {
+    const areaWord = workstreams.length === 2 ? 'two areas' : `${workstreams.length} areas`;
+    sentences.push(`This week, I made progress across ${areaWord}, completing ${totalItems} item${totalItems === 1 ? '' : 's'} in total.`);
+  }
+
+  // One sentence per workstream
+  workstreams.forEach(ws => {
+    let sentence = '';
+    const subLabels = ws.descendants.map(d => d.label);
+
+    if (ws.topDone && subLabels.length === 0) {
+      sentence = `Completed ${ws.name}.`;
+    } else if (ws.topDone && subLabels.length > 0) {
+      sentence = `Wrapped up ${ws.name}, including ${joinList(subLabels)}.`;
+    } else if (subLabels.length === 1) {
+      sentence = `For ${ws.name}, finished ${subLabels[0]}.`;
+    } else if (subLabels.length > 1) {
+      sentence = `On ${ws.name}, completed ${joinList(subLabels)}.`;
+    }
+
+    // Pull in the most informative note (prefer the top-level note, else first descendant note)
+    let noteToAdd = ws.topNote;
+    if (!noteToAdd) {
+      const noted = ws.descendants.find(d => d.note);
+      if (noted) noteToAdd = noted.note;
+    }
+    if (noteToAdd && noteToAdd.trim().length > 4) {
+      // Trim trailing punctuation, then add a period
+      const cleanNote = noteToAdd.trim().replace(/[.!?]+$/, '');
+      sentence += ' ' + cleanNote.charAt(0).toUpperCase() + cleanNote.slice(1) + '.';
+    }
+
+    if (sentence) sentences.push(sentence);
+  });
+
+  return sentences.join(' ');
+}
+
+function copyAll() {
+  const w = currentWeek(); if (!w) return;
+  const para = document.getElementById('summary-para').value;
+  let lines = [];
+  if (para) lines.push(para, '');
+  lines.push('Completed this week:');
+  function walk(tasks, depth) {
+    tasks.forEach(t => {
+      if (t.done) {
+        lines.push('  '.repeat(depth) + '✓ ' + t.label);
+        if (t.note) lines.push('  '.repeat(depth+1) + '→ ' + t.note);
+      }
+      // Always recurse so completed sub-tasks under incomplete parents show up
+      if (t.children) walk(t.children, depth + 1);
+    });
+  }
+  walk(w.tasks, 0);
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy All', 1500);
+  });
+}
+
+function printSummary() {
+  window.print();
+}
+
+// ─── KEY HANDLERS ─────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Cmd/Ctrl + K opens the global search
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+    e.preventDefault();
+    openSearchModal();
+    return;
+  }
+  if (e.key === 'Escape') {
+    closeSummary();
+    closeWeekModal();
+    closeTagModal();
+    closeSearchModal();
+    const tp = document.getElementById('theme-popover');
+    if (tp) tp.classList.remove('open');
+  }
+});
+document.getElementById('week-modal').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveWeekModal();
+});
+
+// ─── PWA ──────────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// Install prompt banner
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  if (document.getElementById('install-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.style.cssText = `
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md); padding: 12px 18px; display: flex; align-items: center;
+    gap: 12px; z-index: 9999; font-family: var(--font); font-size: 13px; color: var(--text);
+    white-space: nowrap;
+  `;
+  banner.innerHTML = `
+    <span>📲 Install Weekly Tracker as an app</span>
+    <button onclick="installApp()" style="padding:6px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;">Install</button>
+    <button onclick="this.closest('#install-banner').remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:2px 4px;">×</button>
+  `;
+  document.body.appendChild(banner);
+}
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.remove();
+}
+
+// Update theme-color meta when dark mode toggles
+const _origToggleDark = toggleDark;
+window.toggleDark = function() {
+  _origToggleDark();
+  document.getElementById('theme-meta').content = document.body.classList.contains('dark') ? '#141412' : '#2d6a4f';
+};
+</script>
+</body>
+</html>
