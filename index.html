@@ -102,6 +102,16 @@
   .data-btns { display: flex; gap: 4px; }
   .data-btn { background: none; border: 1px solid var(--border); padding: 6px 8px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-family: var(--font); transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
   .data-btn:hover { background: var(--surface2); color: var(--text); }
+
+  /* DRIVE SYNC */
+  .drive-sync-row { padding: 10px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+  .drive-sync-btn { font-size: 12px; padding: 7px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+  .drive-sync-btn:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  .drive-sync-btn:disabled { opacity: 0.55; cursor: default; }
+  .drive-sync-btn.connected { color: var(--accent); }
+  .drive-status { font-size: 11px; color: var(--text3); text-align: center; min-height: 14px; }
+  .drive-status.error { color: var(--danger); }
+  .drive-status.syncing { color: var(--accent); }
   .theme-popover { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 8px; display: none; z-index: 100; }
   .theme-popover.open { display: flex; gap: 6px; }
   .theme-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; padding: 0; transition: transform 0.15s; outline: 1.5px solid var(--border); outline-offset: -1.5px; }
@@ -409,6 +419,14 @@
   .tag-suggestion { font-size: 12px; background: var(--tag-bg); color: var(--tag-text); padding: 3px 10px; border-radius: 99px; cursor: pointer; border: none; font-family: var(--font); }
   .tag-suggestion:hover { background: var(--accent-bg); color: var(--accent); }
 
+  /* DRIVE MODAL (connect choice / sync conflict) */
+  #drive-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
+  #drive-modal.open { display: flex; }
+  .drive-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; width: 360px; max-width: 100%; box-shadow: var(--shadow-md); }
+  .drive-modal-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .drive-modal-box p { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
+  .drive-modal-box .modal-btns { flex-wrap: wrap; }
+
   /* PRINT */
   @media print {
     body { background: white; color: black; }
@@ -429,6 +447,13 @@
     </div>
   </div>
   <div class="weeks-list" id="weeks-list"></div>
+  <div class="drive-sync-row">
+    <button class="drive-sync-btn" id="drive-btn" onclick="driveButtonClick()">
+      <span id="drive-btn-icon" data-icon="cloud" data-icon-size="14"></span>
+      <span id="drive-btn-label">Connect Drive</span>
+    </button>
+    <div class="drive-status" id="drive-status"></div>
+  </div>
   <div class="sidebar-bottom">
     <div class="sidebar-bottom-left">
       <button class="dark-toggle" onclick="toggleDark()" id="dark-btn"><span id="dark-btn-icon"></span> <span id="dark-btn-label">Dark</span></button>
@@ -552,6 +577,14 @@
   </div>
 </div>
 
+<div id="drive-modal">
+  <div class="drive-modal-box">
+    <h3 id="drive-modal-title"></h3>
+    <p id="drive-modal-text"></p>
+    <div class="modal-btns" id="drive-modal-btns"></div>
+  </div>
+</div>
+
 <script>
 // ─── ICONS ────────────────────────────────────────────────────────────────────
 // Lucide-style stroke icons. All use the same 24x24 viewBox + currentColor stroke
@@ -576,7 +609,8 @@ const ICON_PATHS = {
   'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
   'chevron-right': '<polyline points="9 6 15 12 9 18"/>',
   'chevron-left': '<polyline points="15 6 9 12 15 18"/>',
-  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h.79a4.5 4.5 0 1 1 0 9z"/>'
 };
 function icon(name, size) {
   size = size || 14;
@@ -666,7 +700,9 @@ let shortlistDragSrc = null;  // task id being dragged inside Today's Shortlist
 let pendingDeleteId = null;  // task id whose delete confirmation is currently showing
 
 function save() {
+  state.lastModified = Date.now();
   localStorage.setItem('wt_state', JSON.stringify(state));
+  driveQueueAutoSync();
 }
 function load() {
   const raw = localStorage.getItem('wt_state');
@@ -2321,6 +2357,350 @@ document.addEventListener('keydown', e => {
 document.getElementById('week-modal').addEventListener('keydown', e => {
   if (e.key === 'Enter') saveWeekModal();
 });
+
+// ─── GOOGLE DRIVE SYNC ──────────────────────────────────────────────────────────
+// Phase 2: syncs `state` to a single JSON file this app creates in the user's own
+// Google Drive (scope: drive.file). That scope means this app can only ever see
+// files it created itself, or a file the user explicitly hands it through the
+// picker below — never anything else in their Drive.
+const DRIVE_CLIENT_ID = '192759370153-kceij9o4b05o7ultmcfo877rtotgsqfq.apps.googleusercontent.com';
+const DRIVE_API_KEY = 'AIzaSyBAzw5TlBnLOSUL1jyuNIFLkSq71fzndTg';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILE_NAME = 'Weekly Tracker Data.json';
+const DRIVE_MIME = 'application/json';
+
+let driveAccessToken = null;   // in-memory only — never persisted to localStorage
+let driveTokenClient = null;
+let driveTokenExpiresAt = 0;
+let driveGisReady = false;
+let driveGapiReady = false;
+let driveAutoSyncTimer = null;
+let driveSyncInFlight = false;
+let driveConnectFlowActive = false;
+
+function driveGetFileId() { return localStorage.getItem('wt_drive_file_id') || null; }
+function driveSetFileId(id) { if (id) localStorage.setItem('wt_drive_file_id', id); else localStorage.removeItem('wt_drive_file_id'); }
+function driveGetLastRemoteModified() { return localStorage.getItem('wt_drive_last_remote_modified') || null; }
+function driveSetLastRemoteModified(iso) { if (iso) localStorage.setItem('wt_drive_last_remote_modified', iso); else localStorage.removeItem('wt_drive_last_remote_modified'); }
+
+function setDriveStatus(text, cls) {
+  const el = document.getElementById('drive-status');
+  el.textContent = text || '';
+  el.className = 'drive-status' + (cls ? ' ' + cls : '');
+}
+function setDriveButton(label, connected, busy) {
+  document.getElementById('drive-btn-label').textContent = label;
+  const btn = document.getElementById('drive-btn');
+  btn.classList.toggle('connected', !!connected);
+  btn.disabled = !!busy;
+}
+
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.async = true; s.defer = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function driveEnsureLibsLoaded() {
+  if (!driveGisReady) {
+    await loadScriptOnce('https://accounts.google.com/gsi/client');
+    driveGisReady = true;
+  }
+  if (!driveGapiReady) {
+    await loadScriptOnce('https://apis.google.com/js/api.js');
+    await new Promise((resolve) => gapi.load('picker', resolve));
+    driveGapiReady = true;
+  }
+}
+
+function driveGetTokenClient() {
+  if (!driveTokenClient) {
+    driveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: DRIVE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: () => {} // replaced per-request in driveRequestToken
+    });
+  }
+  return driveTokenClient;
+}
+
+// Wraps GIS's callback-based token request in a Promise. interactive:false asks
+// for a silent (no popup) refresh — used to quietly reconnect on page load when
+// the browser still has a trusted Google session; it can simply fail, which just
+// means the user needs to click "Connect Drive" again (e.g. after the 7-day
+// re-auth window Google enforces while this app is in Testing mode).
+function driveRequestToken(interactive) {
+  return new Promise((resolve, reject) => {
+    const client = driveGetTokenClient();
+    client.callback = (resp) => {
+      if (resp && resp.access_token) {
+        driveAccessToken = resp.access_token;
+        driveTokenExpiresAt = Date.now() + ((resp.expires_in || 3600) * 1000) - 60000;
+        resolve(resp.access_token);
+      } else {
+        reject(resp && resp.error ? new Error(resp.error) : new Error('No access token'));
+      }
+    };
+    client.error_callback = (err) => reject(err || new Error('Auth failed'));
+    try { client.requestAccessToken(interactive ? { prompt: 'consent' } : { prompt: '' }); }
+    catch (e) { reject(e); }
+  });
+}
+async function driveEnsureToken(interactive) {
+  if (driveAccessToken && Date.now() < driveTokenExpiresAt) return driveAccessToken;
+  return driveRequestToken(interactive);
+}
+
+// ─── Drive REST calls (drive.file scope — plain fetch, no client library needed) ───
+async function driveApiFetch(url, options) {
+  options = options || {};
+  options.headers = Object.assign({}, options.headers, { Authorization: 'Bearer ' + driveAccessToken });
+  const res = await fetch(url, options);
+  if (res.status === 401) throw new Error('drive-auth-expired');
+  if (!res.ok) throw new Error('Drive API error: ' + res.status);
+  return res;
+}
+async function driveCreateFile(content) {
+  const boundary = 'wtboundary';
+  const metadata = { name: DRIVE_FILE_NAME, mimeType: DRIVE_MIME };
+  const body =
+    '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) + '\r\n' +
+    '--' + boundary + '\r\nContent-Type: ' + DRIVE_MIME + '\r\n\r\n' + content + '\r\n' +
+    '--' + boundary + '--';
+  const res = await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime', {
+    method: 'POST',
+    headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
+    body
+  });
+  return res.json();
+}
+async function driveUpdateFile(fileId, content) {
+  const res = await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media&fields=id,modifiedTime', {
+    method: 'PATCH',
+    headers: { 'Content-Type': DRIVE_MIME },
+    body: content
+  });
+  return res.json();
+}
+async function driveGetFileMeta(fileId) {
+  const res = await driveApiFetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?fields=id,name,modifiedTime,trashed');
+  return res.json();
+}
+async function driveGetFileContent(fileId) {
+  const res = await driveApiFetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media');
+  return res.text();
+}
+
+// ─── Picker — used only to choose an *existing* synced file from another device ───
+function driveOpenPicker() {
+  return new Promise((resolve) => {
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+      .setMimeTypes(DRIVE_MIME)
+      .setMode(google.picker.DocsViewMode.LIST);
+    const picker = new google.picker.PickerBuilder()
+      .setOAuthToken(driveAccessToken)
+      .setDeveloperKey(DRIVE_API_KEY)
+      .addView(view)
+      .setTitle('Choose your Weekly Tracker data file')
+      .setCallback((data) => {
+        if (data.action === google.picker.Action.PICKED) resolve(data.docs[0].id);
+        else if (data.action === google.picker.Action.CANCEL) resolve(null);
+      })
+      .build();
+    picker.setVisible(true);
+  });
+}
+
+// ─── Small modal, reused for the connect choice and the sync-conflict prompt ───
+function driveShowModal(title, text, buttons) {
+  document.getElementById('drive-modal-title').textContent = title;
+  document.getElementById('drive-modal-text').textContent = text;
+  const btnRow = document.getElementById('drive-modal-btns');
+  btnRow.innerHTML = '';
+  buttons.forEach(b => {
+    const el = document.createElement('button');
+    el.className = 'btn' + (b.accent ? ' btn-accent' : '');
+    el.textContent = b.label;
+    el.onclick = () => { driveCloseModal(); b.onClick(); };
+    btnRow.appendChild(el);
+  });
+  document.getElementById('drive-modal').classList.add('open');
+}
+function driveCloseModal() { document.getElementById('drive-modal').classList.remove('open'); }
+
+// ─── Main flows ─────────────────────────────────────────────────────────────
+function driveButtonClick() {
+  if (driveGetFileId() && driveAccessToken) { driveSyncNow(); return; }
+  driveConnect();
+}
+
+async function driveConnect() {
+  if (driveConnectFlowActive) return;
+  driveConnectFlowActive = true;
+  setDriveButton('Connecting…', false, true);
+  setDriveStatus('');
+  try {
+    await driveEnsureLibsLoaded();
+    await driveRequestToken(true); // interactive — shows Google's consent popup
+    const existingId = driveGetFileId();
+    if (existingId) {
+      await driveSyncNow();
+    } else {
+      setDriveButton('Connect Drive', false, false);
+      driveShowModal(
+        'Connect Google Drive',
+        'Is this the first device you\'re connecting, or do you already have Weekly Tracker data synced from another device?',
+        [
+          { label: 'I have existing data', accent: false, onClick: driveConnectExisting },
+          { label: 'Start fresh here', accent: true, onClick: driveConnectFresh }
+        ]
+      );
+    }
+  } catch (e) {
+    setDriveButton('Connect Drive', false, false);
+    setDriveStatus('Couldn\'t connect — try again', 'error');
+  } finally {
+    driveConnectFlowActive = false;
+  }
+}
+
+async function driveConnectFresh() {
+  setDriveButton('Setting up…', false, true);
+  try {
+    const meta = await driveCreateFile(JSON.stringify(state));
+    driveSetFileId(meta.id);
+    driveSetLastRemoteModified(meta.modifiedTime);
+    setDriveButton('Sync now', true, false);
+    setDriveStatus('Connected — synced just now');
+  } catch (e) {
+    setDriveButton('Connect Drive', false, false);
+    setDriveStatus('Setup failed — try again', 'error');
+  }
+}
+
+async function driveConnectExisting() {
+  setDriveButton('Choose file…', false, true);
+  try {
+    const fileId = await driveOpenPicker();
+    if (!fileId) { setDriveButton('Connect Drive', false, false); return; }
+    const meta = await driveGetFileMeta(fileId);
+    const remoteContent = await driveGetFileContent(fileId);
+    let remoteState;
+    try { remoteState = JSON.parse(remoteContent); } catch (e) { throw new Error('That file isn\'t Weekly Tracker data'); }
+    driveSetFileId(fileId);
+    driveApplyRemoteState(remoteState);
+    driveSetLastRemoteModified(meta.modifiedTime);
+    setDriveButton('Sync now', true, false);
+    setDriveStatus('Connected — loaded your synced data');
+  } catch (e) {
+    setDriveButton('Connect Drive', false, false);
+    setDriveStatus(e.message || 'Couldn\'t load that file', 'error');
+  }
+}
+
+function driveApplyRemoteState(remoteState) {
+  state = remoteState;
+  localStorage.setItem('wt_state', JSON.stringify(state));
+  renderSidebar();
+  if (state.currentWeekId) {
+    const w = state.weeks.find(w => w.id === state.currentWeekId);
+    if (w) selectWeek(w.id, false);
+  } else {
+    document.getElementById('empty-state').style.display = '';
+  }
+}
+
+// Manual "Sync now", and the background check right after reconnecting: reads
+// the remote file's timestamp first; if it's newer than the last version this
+// device knows about, another device saved more recently, so we ask before
+// overwriting anything. Otherwise this device's state is pushed up as-is.
+async function driveSyncNow() {
+  const fileId = driveGetFileId();
+  if (!fileId || driveSyncInFlight) return;
+  driveSyncInFlight = true;
+  setDriveButton('Syncing…', true, true);
+  setDriveStatus('Syncing…', 'syncing');
+  try {
+    await driveEnsureToken(false);
+    const meta = await driveGetFileMeta(fileId);
+    const lastKnown = driveGetLastRemoteModified();
+    if (meta.modifiedTime && lastKnown && meta.modifiedTime !== lastKnown) {
+      setDriveButton('Sync now', true, false);
+      setDriveStatus('Newer data found on Drive', 'error');
+      driveShowModal(
+        'Newer data on Drive',
+        'Another device saved changes to Drive more recently than this one. Load that version, or overwrite it with what\'s on this device?',
+        [
+          { label: 'Overwrite with this device', accent: false, onClick: () => drivePush(fileId) },
+          { label: 'Load Drive\'s version', accent: true, onClick: () => drivePull(fileId) }
+        ]
+      );
+      return;
+    }
+    await drivePush(fileId);
+  } catch (e) {
+    setDriveButton('Sync now', true, false);
+    setDriveStatus(e.message === 'drive-auth-expired' ? 'Reconnect needed' : 'Sync failed', 'error');
+  } finally {
+    driveSyncInFlight = false;
+  }
+}
+async function drivePush(fileId) {
+  const meta = await driveUpdateFile(fileId, JSON.stringify(state));
+  driveSetLastRemoteModified(meta.modifiedTime);
+  setDriveButton('Sync now', true, false);
+  setDriveStatus('Synced just now');
+}
+async function drivePull(fileId) {
+  const meta = await driveGetFileMeta(fileId);
+  const remoteContent = await driveGetFileContent(fileId);
+  driveApplyRemoteState(JSON.parse(remoteContent));
+  driveSetLastRemoteModified(meta.modifiedTime);
+  setDriveButton('Sync now', true, false);
+  setDriveStatus('Loaded Drive\'s version');
+}
+
+// Debounced auto-save: after any local change, wait for a pause, then push
+// quietly in the background — no spinner, no interruption. A no-op unless
+// already connected with a live token, so nothing pops up uninvited.
+function driveQueueAutoSync() {
+  if (!driveGetFileId() || !driveAccessToken) return;
+  clearTimeout(driveAutoSyncTimer);
+  driveAutoSyncTimer = setTimeout(async () => {
+    const fileId = driveGetFileId();
+    if (!fileId || driveSyncInFlight) return;
+    try {
+      await driveEnsureToken(false);
+      const meta = await driveUpdateFile(fileId, JSON.stringify(state));
+      driveSetLastRemoteModified(meta.modifiedTime);
+      setDriveStatus('Synced just now');
+    } catch (e) {
+      // Local save already succeeded regardless — the next manual "Sync now"
+      // or the next auto-save retries. No need to surface this one quietly.
+    }
+  }, 2500);
+}
+
+// On load: if this device has connected before, try a silent (no popup)
+// reconnect. Works quietly if the browser still has a trusted Google session;
+// otherwise it fails silently and the button just sits at "Connect Drive".
+(async function driveInit() {
+  if (!driveGetFileId()) return;
+  try {
+    await driveEnsureLibsLoaded();
+    await driveRequestToken(false);
+    setDriveButton('Sync now', true, false);
+    driveSyncNow();
+  } catch (e) {
+    setDriveButton('Connect Drive', false, false);
+    setDriveStatus('Reconnect needed', 'error');
+  }
+})();
 
 // ─── PWA ──────────────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
