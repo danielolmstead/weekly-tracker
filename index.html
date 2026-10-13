@@ -473,6 +473,7 @@
   .drive-modal-box p { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
   .drive-modal-box .modal-btns { flex-wrap: wrap; }
 
+  .shortlist-header .shortlist-newday { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
   /* Breadcrumb for a starred subtask in Today's Shortlist: one muted line above
      the task showing its nearest two ancestors ("…" if there are more). Only
      shown when the task's parent isn't itself in the shortlist. */
@@ -575,7 +576,7 @@
          starred as being "for today". Rendered from the same underlying
          tasks, so toggling done/star state anywhere keeps both in sync. -->
     <div id="shortlist" class="shortlist" style="display:none;">
-      <div class="shortlist-header">Today's Shortlist</div>
+      <div class="shortlist-header">Today's Shortlist<button class="btn btn-sm shortlist-newday" onclick="newDay()" title="Clear checked-off tasks and start a fresh shortlist">New day</button></div>
       <ul class="shortlist-items" id="shortlist-items"></ul>
     </div>
     <ul class="checklist" id="checklist" style="display:none;"></ul>
@@ -2360,6 +2361,40 @@ function renderShortlistItems(tasks, container, isRoot) {
       li.appendChild(subUl);
     }
   });
+}
+
+// ─── New day ───────────────────────────────────────────────────────────────
+// The day-sized version of "New week". Checked-off shortlist tasks come off the
+// shortlist (they stay checked off in the week's own list — nothing is deleted).
+// Unchecked ones are carried over or cleared, by asking. Clearing only un-stars:
+// the task itself always stays in the week. Reuses the small Drive dialog
+// (driveShowModal) since it's a generic title/text/buttons modal.
+function newDay() {
+  const w = currentWeek(); if (!w) return;
+  const starred = [];
+  (function walk(list) { list.forEach(t => { if (t.shortlisted) starred.push(t); if (t.children) walk(t.children); }); })(w.tasks);
+  const done = starred.filter(t => t.done);
+  const open = starred.filter(t => !t.done);
+  if (!starred.length) return;
+  const n = (k, word) => k + ' ' + word + (k === 1 ? '' : 's');
+  const apply = clearOpen => {
+    done.forEach(t => { t.shortlisted = false; });
+    if (clearOpen) open.forEach(t => { t.shortlisted = false; });
+    save();
+    renderChecklist();
+  };
+  const cancel = { label: 'Cancel', onClick: () => {} };
+  const stay = ' They stay in this week\'s list.';
+  if (!open.length) {
+    driveShowModal('Start a new day?', n(done.length, 'checked-off task') + ' will come off the shortlist.' + stay,
+      [cancel, { label: 'Start new day', accent: true, onClick: () => apply(false) }]);
+  } else if (!done.length) {
+    driveShowModal('Start a new day?', n(open.length, 'unchecked task') + ' on the shortlist. Keep them for the new day, or clear them from the shortlist?' + stay,
+      [cancel, { label: 'Clear them', onClick: () => apply(true) }, { label: 'Keep them', accent: true, onClick: () => apply(false) }]);
+  } else {
+    driveShowModal('Start a new day?', n(done.length, 'checked-off task') + ' will come off the shortlist. What about the ' + n(open.length, 'unchecked task') + '? Cleared ones come off the shortlist too. Nothing is deleted; every task stays in this week\'s list.',
+      [cancel, { label: 'Clear them', onClick: () => apply(true) }, { label: 'Keep unchecked', accent: true, onClick: () => apply(false) }]);
+  }
 }
 
 function renderShortlist() {
