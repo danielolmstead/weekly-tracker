@@ -406,9 +406,12 @@
   .add-root-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
   /* WEEK MODAL */
-  #week-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
+  #week-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
   #week-modal.open { display: flex; }
-  .week-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 28px; width: 360px; box-shadow: var(--shadow-md); }
+  .week-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 28px; width: 360px; max-width: 100%; max-height: 100%; overflow-y: auto; box-shadow: var(--shadow-md); }
+  /* Date inputs have a built-in minimum width (wider on iOS Safari); let them
+     shrink with the row instead of pushing the dialog past the screen edge. */
+  .week-modal-box input[type="date"] { min-width: 0; }
   .week-modal-box h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
   .week-modal-box label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
   .week-modal-box input { width: 100%; padding: 8px 10px; font-size: 14px; font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 12px; }
@@ -470,6 +473,12 @@
   .drive-modal-box p { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
   .drive-modal-box .modal-btns { flex-wrap: wrap; }
 
+  /* Breadcrumb for a starred subtask in Today's Shortlist: one muted line above
+     the task showing its nearest two ancestors ("…" if there are more). Only
+     shown when the task's parent isn't itself in the shortlist. */
+  .crumb-line { padding: 2px 8px 0 34px; font-size: 11.5px; line-height: 1.5; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crumb-line .sep { margin: 0 5px; opacity: 0.7; }
+
   /* MOBILE NAV */
   /* Hidden on desktop; shown only under the breakpoint below. */
   .hamburger-btn { display: none; }
@@ -491,6 +500,13 @@
     #header { padding: 16px; gap: 10px; }
     .week-title { font-size: 18px; }
     #content { padding: 16px; }
+    /* New Week dialog: tighter padding and slightly smaller fields so the
+       label and the two date fields fit inside a narrow screen. */
+    .week-modal-box { padding: 20px; }
+    .week-modal-box h2 { margin-bottom: 12px; }
+    .week-modal-box input { padding: 6px 8px; font-size: 13px; margin-bottom: 10px; }
+    .week-modal-box input[type="date"] { padding: 6px 4px; font-size: 12.5px; }
+    .carry-over-row { padding: 8px 10px; font-size: 12px; }
     /* Swap the desktop hover-controls for the tap-to-open overflow menu —
        see the .task-menu-btn comment above for why. */
     .task-controls { display: none; }
@@ -1041,6 +1057,13 @@ function defaultLabelFromDate(d) {
   return 'Week of ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// The header drops a leading "Week of " to save room on small screens
+// (display only: the stored label and the sidebar still show the full text).
+function headerTitleFromLabel(label) {
+  const short = String(label || '').replace(/^\s*week of\s+/i, '').trim();
+  return short || label;
+}
+
 // Today as YYYY-MM-DD (in local time)
 function todayISO() {
   const d = new Date();
@@ -1121,7 +1144,7 @@ function saveWeekModal() {
     closeWeekModal();
     renderSidebar();
     if (state.currentWeekId === editingWeekId) {
-      document.getElementById('week-title').textContent = label;
+      document.getElementById('week-title').textContent = headerTitleFromLabel(label);
       document.getElementById('week-subtitle').textContent = range;
     }
     editingWeekId = null;
@@ -1209,7 +1232,7 @@ function selectWeek(id, doSave = true) {
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('checklist').style.display = '';
   document.getElementById('add-root-btn').style.display = '';
-  document.getElementById('week-title').textContent = week.label;
+  document.getElementById('week-title').textContent = headerTitleFromLabel(week.label);
   document.getElementById('week-subtitle').textContent = week.range || '';
   renderChecklist();
   updateProgress();
@@ -1706,14 +1729,16 @@ function addSiblingTask(id) {
   const w = currentWeek(); if (!w) return;
   const info = findListContaining(w.tasks, id);
   if (!info) return;
-  const t = newTask('');
+  // Same default label as addRootTask / addChildTask, pre-selected so typing
+  // replaces it — a new task is never left as a blank line.
+  const t = newTask('New task');
   info.list.splice(info.index + 1, 0, t);
   save();
   renderChecklist();
   updateProgress();
   setTimeout(() => {
     const el = document.querySelector(`[data-id="${t.id}"] .task-label`);
-    if (el) { el.focus(); }
+    if (el) { el.focus(); selectAll(el); }
   }, 30);
 }
 
@@ -2242,6 +2267,28 @@ function toggleShortlistCollapse(id) {
   renderShortlist();
 }
 
+// ─── Shortlist breadcrumbs ──────────────────────────────────────────────────
+// A starred task whose parent is NOT starred shows up as a top-level shortlist
+// entry with no context. This builds a one-line breadcrumb of its ancestors
+// (nearest two; "…" stands in for anything above that).
+function shortlistAncestors(id) {
+  const w = currentWeek(); if (!w) return [];
+  let found = null;
+  (function f(list, trail) {
+    for (const t of list) {
+      if (t.id === id) { found = trail; return true; }
+      if (t.children && f(t.children, trail.concat(t))) return true;
+    }
+    return false;
+  })(w.tasks, []);
+  return found || [];
+}
+function crumbEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function crumbLabels(anc) {
+  const labels = anc.slice(-2).map(a => crumbEsc(a.label || 'Untitled'));
+  return anc.length > 2 ? ['…'].concat(labels) : labels;
+}
+
 // Recursive renderer for shortlist entries. Only individually-starred tasks
 // show a star (clickable to unstar and remove them from the shortlist);
 // brought-along descendants have no star since their presence is derived
@@ -2276,12 +2323,18 @@ function renderShortlistItems(tasks, container, isRoot) {
     const li = document.createElement('li');
     li.className = 'shortlist-item';
     li.dataset.id = t.id;
+    let crumbHtml = '';
+    if (isRoot) {
+      const labels = crumbLabels(shortlistAncestors(t.id));
+      if (labels.length) crumbHtml = '<div class="crumb-line">' + labels.join('<span class="sep">›</span>') + '</div>';
+    }
     // Indent for nested items comes from CSS alone now (.shortlist-subitems >
     // .shortlist-item), which correctly compounds at every nesting depth —
     // see the comment above that rule. No inline style needed here.
     // Draggability (root items only) is wired up by initShortlistSortable()
     // (SortableJS) once, on the whole list, after rendering — not per-item here.
     li.innerHTML = `
+      ${crumbHtml}
       <div class="shortlist-item-row">
         ${gripHtml}
         <div class="checkbox ${checkClass}" onclick="toggleDone('${t.id}')"></div>
