@@ -2796,10 +2796,58 @@ function driveQueueAutoSync() {
 })();
 
 // ─── PWA ──────────────────────────────────────────────────────────────────────
+// Service worker + update check. A new deploy changes sw.js (its CACHE_NAME), and
+// the browser notices that on its own, but only occasionally, and the new files
+// only show up on the NEXT load. So we also ask for a check ourselves — at launch,
+// whenever the app comes back to the foreground (at most every 10 minutes), and
+// hourly while it stays open — and when the new worker takes over we show a
+// "reload" banner. sw.js activates immediately (skipWaiting + clients.claim), so
+// a controllerchange on a page that already had a controller means "a newer
+// version is installed and one reload away".
+let swReg = null;
+let swHadController = false;
+let swLastCheck = 0;
+function checkForUpdate() {
+  if (!swReg) return;
+  swLastCheck = Date.now();
+  swReg.update().catch(() => {});
+}
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  swHadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // The very first install also fires this (no controller before it) — not an update.
+    if (!swHadController) { swHadController = true; return; }
+    showUpdateBanner();
   });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      swReg = reg;
+      checkForUpdate();
+      setInterval(checkForUpdate, 60 * 60 * 1000);
+    }).catch(() => {});
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - swLastCheck > 10 * 60 * 1000) checkForUpdate();
+  });
+}
+
+function showUpdateBanner() {
+  if (document.getElementById('update-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.style.cssText = `
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md); padding: 10px 14px; display: flex; align-items: center;
+    gap: 12px; z-index: 9999; font-family: var(--font); font-size: 13px; color: var(--text);
+    white-space: nowrap; max-width: calc(100vw - 24px);
+  `;
+  banner.innerHTML = `
+    <span>New version available</span>
+    <button onclick="location.reload()" style="padding:6px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;">Reload</button>
+    <button onclick="this.closest('#update-banner').remove()" aria-label="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:2px 4px;">×</button>
+  `;
+  document.body.appendChild(banner);
 }
 
 // Install prompt banner
