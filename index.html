@@ -100,6 +100,7 @@
   .sidebar-bottom-left { display: flex; align-items: center; gap: 6px; }
   .theme-btn-wrap { position: relative; }
   .data-btns { display: flex; gap: 4px; }
+  .app-version { padding: 0 12px 10px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); }
   .data-btn { background: none; border: 1px solid var(--border); padding: 6px 8px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-family: var(--font); transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
   .data-btn:hover { background: var(--surface2); color: var(--text); }
 
@@ -552,6 +553,8 @@
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
+  <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
+  <div class="app-version" title="App version">v16</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
