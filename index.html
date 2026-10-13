@@ -554,7 +554,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v17</div>
+  <div class="app-version" title="App version">v18</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -1792,9 +1792,48 @@ function expandAncestors(id) {
   return changed;
 }
 
+// Indent/outdent re-render the whole list, which throws away the text cursor or
+// selection. These two put it back exactly where it was — in particular a freshly
+// created "New task" stays fully selected, so typing replaces it, and a label that
+// already has text keeps its cursor position instead of jumping to the start.
+function captureLabelCaret(id) {
+  const el = document.querySelector(`[data-id="${id}"] .task-label`);
+  const sel = window.getSelection();
+  if (!el || !sel.rangeCount || !el.contains(sel.anchorNode)) return null;
+  const r = sel.getRangeAt(0);
+  const pre = document.createRange();
+  pre.selectNodeContents(el);
+  pre.setEnd(r.startContainer, r.startOffset);
+  const start = pre.toString().length;
+  return { start, end: start + r.toString().length };
+}
+function restoreLabelCaret(el, caret) {
+  el.focus();
+  if (!caret) return;
+  const locate = (offset) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node, remaining = offset, last = null;
+    while ((node = walker.nextNode())) {
+      last = node;
+      if (remaining <= node.length) return [node, remaining];
+      remaining -= node.length;
+    }
+    return last ? [last, last.length] : [el, 0];
+  };
+  const [sn, so] = locate(caret.start);
+  const [en, eo] = locate(caret.end);
+  const range = document.createRange();
+  range.setStart(sn, so);
+  range.setEnd(en, eo);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
 // Tab: make current task a child of the task immediately above it (at same level)
 function indentTask(id) {
   const w = currentWeek(); if (!w) return;
+  const caret = captureLabelCaret(id);
   const info = findListContaining(w.tasks, id);
   if (!info || info.index === 0) return; // no previous sibling
   const prevSibling = info.list[info.index - 1];
@@ -1808,13 +1847,14 @@ function indentTask(id) {
   updateProgress();
   setTimeout(() => {
     const el = document.querySelector(`[data-id="${id}"] .task-label`);
-    if (el) el.focus();
+    if (el) restoreLabelCaret(el, caret);
   }, 30);
 }
 
 // Shift+Tab: move task out of its parent, placing it after the parent
 function unindentTask(id) {
   const w = currentWeek(); if (!w) return;
+  const caret = captureLabelCaret(id);
   // Find parent
   const parent = findParent(w.tasks, id);
   if (!parent) return; // already at root level
@@ -1830,7 +1870,7 @@ function unindentTask(id) {
   updateProgress();
   setTimeout(() => {
     const el = document.querySelector(`[data-id="${id}"] .task-label`);
-    if (el) el.focus();
+    if (el) restoreLabelCaret(el, caret);
   }, 30);
 }
 
