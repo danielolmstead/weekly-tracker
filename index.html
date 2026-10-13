@@ -124,6 +124,7 @@
   .week-title-area { flex: 1; }
   .week-title { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
   .week-subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
+  .week-subtitle .sub-short { display: none; }
   .progress-ring-wrap { display: flex; align-items: center; gap: 10px; }
   .progress-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
   .header-btns { display: flex; gap: 8px; }
@@ -499,7 +500,10 @@
     }
     #sidebar.open { transform: translateX(0); }
     #header { padding: 16px; gap: 10px; }
-    .week-title { font-size: 18px; }
+    /* The big week title is hidden on mobile; the date range under it stays. */
+    .week-title { display: none; }
+    .week-subtitle .sub-long { display: none; }
+    .week-subtitle .sub-short { display: inline; }
     #content { padding: 16px; }
     /* New Week dialog: tighter padding and slightly smaller fields so the
        label and the two date fields fit inside a narrow screen. */
@@ -1058,6 +1062,23 @@ function defaultLabelFromDate(d) {
   return 'Week of ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// The date range under the week title. Stored as e.g. "October 6 – October 12, 2026";
+// on mobile (see the media query) the months are shown abbreviated instead
+// ("Oct 6 – Oct 12, 2026"), so both versions are rendered and CSS picks one.
+function setWeekSubtitle(range) {
+  const el = document.getElementById('week-subtitle');
+  el.textContent = '';
+  if (!range) return;
+  const long = document.createElement('span');
+  long.className = 'sub-long';
+  long.textContent = range;
+  const short = document.createElement('span');
+  short.className = 'sub-short';
+  short.textContent = range.replace(/\b(January|February|March|April|June|July|August|September|October|November|December)\b/g, m => m.slice(0, 3));
+  el.appendChild(long);
+  el.appendChild(short);
+}
+
 // The header drops a leading "Week of " to save room on small screens
 // (display only: the stored label and the sidebar still show the full text).
 function headerTitleFromLabel(label) {
@@ -1146,7 +1167,7 @@ function saveWeekModal() {
     renderSidebar();
     if (state.currentWeekId === editingWeekId) {
       document.getElementById('week-title').textContent = headerTitleFromLabel(label);
-      document.getElementById('week-subtitle').textContent = range;
+      setWeekSubtitle(range);
     }
     editingWeekId = null;
   } else {
@@ -1219,7 +1240,7 @@ function showEmpty() {
   document.getElementById('checklist').style.display = 'none';
   document.getElementById('add-root-btn').style.display = 'none';
   document.getElementById('week-title').textContent = 'Select or create a week';
-  document.getElementById('week-subtitle').textContent = '';
+  setWeekSubtitle('');
   document.getElementById('progress-text').textContent = '';
 }
 
@@ -1234,7 +1255,7 @@ function selectWeek(id, doSave = true) {
   document.getElementById('checklist').style.display = '';
   document.getElementById('add-root-btn').style.display = '';
   document.getElementById('week-title').textContent = headerTitleFromLabel(week.label);
-  document.getElementById('week-subtitle').textContent = week.range || '';
+  setWeekSubtitle(week.range);
   renderChecklist();
   updateProgress();
 }
