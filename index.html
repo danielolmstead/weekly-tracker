@@ -489,6 +489,8 @@
   .sidebar-backdrop.open { display: block; }
 
   @media (max-width: 768px) {
+    /* No hover on touch screens: keep the star outline always visible */
+    .star-toggle { opacity: 1; }
     .hamburger-btn { display: inline-flex; }
     /* Sidebar becomes an off-canvas drawer: fixed to the left edge, slid out
        of view by default, and slid in on top of everything (above the
@@ -554,7 +556,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v18</div>
+  <div class="app-version" title="App version">v20</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -2493,6 +2495,18 @@ document.addEventListener('keydown', e => {
 document.getElementById('week-modal').addEventListener('keydown', e => {
   if (e.key === 'Enter') saveWeekModal();
 });
+// Tapping/clicking the dimmed area outside the search box closes it (on a phone
+// there is no Esc key). The press must also START on the dimmed area, so
+// dragging to select text in the search box and releasing outside doesn't close it.
+(function () {
+  const overlay = document.getElementById('search-modal');
+  let pressedOnOverlay = false;
+  overlay.addEventListener('pointerdown', e => { pressedOnOverlay = (e.target === overlay); });
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay && pressedOnOverlay) closeSearchModal();
+    pressedOnOverlay = false;
+  });
+})();
 
 // ─── GOOGLE DRIVE SYNC ──────────────────────────────────────────────────────────
 // Phase 2: syncs `state` to a single JSON file this app creates in the user's own
