@@ -519,6 +519,115 @@
        see the .task-menu-btn comment above for why. */
     .task-controls { display: none; }
     .task-menu-btn { display: inline-flex; }
+
+    /* ── MATERIAL SIZING FOR TOUCH ─────────────────────────────────────────
+       Material 3 on phones: 48dp touch targets (40dp on list-row buttons, by choice), 16sp body text,
+       40dp single-line list rows, 24dp icons, 40dp buttons, 32dp chips.
+       Geometry note: checkbox centre sits at x=39 (8 row pad + 16 grip +
+       4 gap + 11 half-checkbox); the indent guide lines and the note/meta
+       rows are positioned from that, so keep them in step if it changes. */
+    body { font-size: 16px; }
+    #header { padding: 12px 16px; gap: 8px; }
+    .btn { font-size: 14px; min-height: 40px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; }
+    .btn.btn-icon { width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 12px; }
+    .btn.btn-icon svg { width: 24px; height: 24px; }
+    .btn-sm { font-size: 14px; min-height: 40px; padding: 0 16px; }
+    .progress-text { font-size: 14px; }
+    .week-subtitle { font-size: 14px; }
+
+    /* Task rows */
+    .task-item { margin-bottom: 0; }
+    .task-row, .shortlist-item-row { min-height: 40px; padding: 0 4px 0 8px; gap: 4px; align-items: center; }
+    .shortlist-item-row > .checkbox,
+    .shortlist-item-row > .drag-handle,
+    .shortlist-item-row > .star-toggle,
+    .shortlist-item-row > .expand-toggle { margin-top: 0; }
+    .drag-handle { width: 16px; padding: 0; justify-content: center; }
+    .checkbox { width: 22px; height: 22px; border-width: 2px; border-radius: 4px; position: relative; }
+    .checkbox::before { content: ''; position: absolute; inset: -9px -10px; }
+    .checkbox.checked::after { width: 6px; height: 11px; }
+    .checkbox.partial::after { width: 10px; height: 2px; }
+    .task-label, .subtask-list .task-label, .shortlist-label { font-size: 16px; line-height: 1.35; padding: 1px 4px; }
+    .note-indicator { padding: 6px; }
+    .note-indicator svg { width: 18px; height: 18px; }
+    .star-toggle, .shortlist-item .star-toggle,
+    .task-menu-btn,
+    .expand-toggle, .shortlist-item .expand-toggle { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+    .star-toggle svg, .task-menu-btn svg, .expand-toggle svg { width: 24px; height: 24px; }
+    .star-toggle:active, .task-menu-btn:active, .expand-toggle:active { background: var(--surface2); }
+
+    /* Indent guides + note/meta rows follow the new checkbox centre */
+    .subtask-list::before, .shortlist-subitems::before { left: 39px; }
+    .task-note-area::before { left: 39px; }
+    .task-meta, .task-note-area { padding-left: 58px; }
+    .task-meta { gap: 8px; padding-top: 0; padding-bottom: 4px; margin-top: -6px; }
+    .tag-pill, .due-badge { font-size: 14px; min-height: 28px; padding: 0 12px; display: inline-flex; align-items: center; }
+    .tag-pill .remove-tag { font-size: 14px; }
+    .task-note { font-size: 16px; padding: 8px 12px; min-height: 44px; line-height: 1.4; }
+
+    /* Shortlist card */
+    .shortlist { padding: 8px 16px 8px; margin-bottom: 12px; }
+    .shortlist-items { margin: 0 -16px; }
+    .shortlist-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
+    .crumb-line { padding: 2px 8px 0 28px; margin-bottom: -6px; font-size: 13px; }
+    .add-root-btn { min-height: 48px; padding: 0 16px; gap: 12px; font-size: 16px; }
+    .add-root-btn svg { width: 24px; height: 24px; }
+
+    /* Row overflow menu + delete confirmation */
+    .task-menu-popover { min-width: 220px; padding: 8px 0; right: 12px; }
+    .task-menu-item { min-height: 48px; padding: 0 16px; font-size: 16px; gap: 16px; border-radius: 0; }
+    .task-menu-item svg { width: 22px; height: 22px; }
+    .task-menu-divider { margin: 8px 0; }
+    .delete-confirm { right: 40px; padding: 4px; gap: 4px; }
+    .task-item:has(.expand-toggle) .delete-confirm { right: 80px; }
+    .delete-confirm-btn { width: 48px; height: 48px; }
+    .delete-confirm-btn svg { width: 24px; height: 24px; }
+
+    /* Navigation drawer */
+    #sidebar { width: min(320px, 85vw); min-width: 0; }
+    .sidebar-top { padding: 20px 16px 12px; }
+    .app-name { font-size: 14px; }
+    .sidebar-actions button, .drive-sync-btn, .dark-toggle { font-size: 14px; min-height: 48px; padding: 0 16px; }
+    .weeks-list { padding: 8px 12px; }
+    .week-item { min-height: 48px; padding: 0 8px 0 16px; border-radius: 28px; margin-bottom: 4px; }
+    .week-item-label { font-size: 14px; }
+    .week-item-count { font-size: 12px; }
+    .week-item-menu-btn { opacity: 1; width: 40px; height: 40px; padding: 0; justify-content: center; }
+    .week-item-menu-btn svg { width: 20px; height: 20px; }
+    .week-menu-popover { min-width: 180px; padding: 8px 0; }
+    .week-menu-item { min-height: 48px; padding: 0 16px; font-size: 16px; border-radius: 0; display: flex; align-items: center; }
+    .drive-status { font-size: 12px; }
+    .data-btn { width: 48px; height: 48px; padding: 0; justify-content: center; }
+    .data-btn svg, .dark-toggle svg { width: 20px; height: 20px; }
+    .theme-swatch { width: 32px; height: 32px; }
+    .theme-popover.open { gap: 10px; padding: 12px; }
+    .app-version { font-size: 12px; }
+
+    /* Dialogs */
+    .week-modal-box h2, .tag-modal-box h3, .drive-modal-box h3 { font-size: 20px; }
+    .week-modal-box label { font-size: 14px; }
+    .week-modal-box input { font-size: 16px; padding: 12px; min-height: 48px; }
+    .week-modal-box input[type="date"] { font-size: 16px; padding: 12px 8px; }
+    .carry-over-row { font-size: 14px; padding: 12px; min-height: 48px; }
+    .carry-over-row input[type="checkbox"] { width: 20px; height: 20px; }
+    .tag-modal-box { width: calc(100% - 32px); max-width: 360px; }
+    .tag-modal-box input { font-size: 16px; padding: 12px; min-height: 48px; }
+    .tag-suggestion { font-size: 14px; min-height: 32px; padding: 0 14px; }
+    .drive-modal-box p { font-size: 16px; }
+    .modal-btns { gap: 8px; }
+
+    /* Search */
+    #search-modal { padding: 64px 16px 16px; }
+    .search-kbd { display: none; }
+    .search-input-row { padding: 0 16px; min-height: 56px; }
+    #search-input { font-size: 16px; }
+    .search-result-item { padding: 8px 16px; min-height: 48px; }
+    .search-task-label { font-size: 16px; }
+    .search-breadcrumb { font-size: 13px; }
+    .search-task-note { font-size: 14px; }
+    .search-week-label { font-size: 12px; padding: 8px 16px 4px; }
+    .search-empty, .search-no-results { font-size: 16px; }
+    mark.search-hl { padding: 0 1px; }
   }
 </style>
 </head>
@@ -556,7 +665,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v20</div>
+  <div class="app-version" title="App version">v23</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
