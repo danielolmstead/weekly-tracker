@@ -192,6 +192,9 @@
   .task-label:focus { background: var(--surface2); }
   .task-label[data-done="true"] { color: var(--text3); text-decoration: line-through; }
   .task-label[contenteditable="true"] { cursor: text; }
+  /* Brand-new tasks have no text. The faint hint is CSS-only (never saved as the label). */
+  .task-label:empty::before, .shortlist-label:empty::before { content: 'New task'; color: var(--text3); pointer-events: none; }
+  .task-label:empty, .shortlist-label:empty { min-width: 4em; }
   /* Small pencil indicator next to the title when a task has a note saved.
      Always visible (unlike the row-controls pencil button which is hover-only)
      so the presence of a note is glanceable. Clickable to toggle the note.
@@ -665,7 +668,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v23</div>
+  <div class="app-version" title="App version">v24</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -1519,7 +1522,7 @@ function updateProgress() {
 // ─── ADD / EDIT TASKS ────────────────────────────────────────────────────────
 function addRootTask() {
   const w = currentWeek(); if (!w) return;
-  const t = newTask('New task');
+  const t = newTask('');
   w.tasks.push(t);
   save();
   renderChecklist();
@@ -1536,7 +1539,7 @@ function addChildTask(parentId) {
   const parent = findTask(w.tasks, parentId);
   if (!parent) return;
   if (!parent.children) parent.children = [];
-  const t = newTask('New task');
+  const t = newTask('');
   parent.children.push(t);
   save();
   renderChecklist();
@@ -1865,9 +1868,8 @@ function addSiblingTask(id) {
   const w = currentWeek(); if (!w) return;
   const info = findListContaining(w.tasks, id);
   if (!info) return;
-  // Same default label as addRootTask / addChildTask, pre-selected so typing
-  // replaces it — a new task is never left as a blank line.
-  const t = newTask('New task');
+  // New tasks start with an empty label (a faint CSS placeholder shows until typed).
+  const t = newTask('');
   info.list.splice(info.index + 1, 0, t);
   save();
   renderChecklist();
@@ -1904,8 +1906,7 @@ function expandAncestors(id) {
 }
 
 // Indent/outdent re-render the whole list, which throws away the text cursor or
-// selection. These two put it back exactly where it was — in particular a freshly
-// created "New task" stays fully selected, so typing replaces it, and a label that
+// selection. These two put it back exactly where it was — in particular a label that
 // already has text keeps its cursor position instead of jumping to the start.
 function captureLabelCaret(id) {
   const el = document.querySelector(`[data-id="${id}"] .task-label`);
