@@ -169,6 +169,9 @@
      now, replacing the old .drag-over highlight from the native-HTML5-DnD
      implementation this replaced (see initTaskSortable()). */
   .task-item.dragging { opacity: 0.4; }
+  /* The floating copy of a dragged row is an <li> moved onto <body>, outside any <ul>,
+     so it picked up the browser's default bullet (the stray dot). */
+  .sortable-fallback { list-style: none; }
   .sortable-ghost { background: var(--accent-bg) !important; border-radius: var(--radius); opacity: 0.6; }
   .sortable-ghost .task-row, .sortable-ghost .shortlist-item-row { visibility: hidden; }
 
@@ -526,8 +529,8 @@
     /* ── MATERIAL SIZING FOR TOUCH ─────────────────────────────────────────
        Material 3 on phones: 48dp touch targets (40dp on list-row buttons, by choice), 16sp body text,
        40dp single-line list rows, 24dp icons, 40dp buttons, 32dp chips.
-       Geometry note: checkbox centre sits at x=39 (8 row pad + 16 grip +
-       4 gap + 11 half-checkbox); the indent guide lines and the note/meta
+       Geometry note: checkbox centre sits at x=15 (4 row pad +
+       11 half-checkbox); the indent guide lines and the note/meta
        rows are positioned from that, so keep them in step if it changes. */
     body { font-size: 16px; }
     #header { padding: 12px 16px; gap: 8px; }
@@ -540,12 +543,16 @@
 
     /* Task rows */
     .task-item { margin-bottom: 0; }
-    .task-row, .shortlist-item-row { min-height: 40px; padding: 0 4px 0 8px; gap: 4px; align-items: center; }
+    .task-row, .shortlist-item-row { min-height: 40px; padding: 0 4px 0 4px; gap: 4px; align-items: center; }
     .shortlist-item-row > .checkbox,
     .shortlist-item-row > .drag-handle,
     .shortlist-item-row > .star-toggle,
     .shortlist-item-row > .expand-toggle { margin-top: 0; }
-    .drag-handle { width: 16px; padding: 0; justify-content: center; }
+    /* No grip on phones: press and hold a row to drag it (see dragOptions()). */
+    .drag-handle, .shortlist-item .drag-handle.spacer { display: none; }
+    .task-row, .shortlist-item-row { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .task-label, .shortlist-label { -webkit-user-select: text; user-select: text; }
+    .sortable-chosen { background: var(--accent-bg); border-radius: var(--radius); }
     .checkbox { width: 22px; height: 22px; border-width: 2px; border-radius: 4px; position: relative; }
     .checkbox::before { content: ''; position: absolute; inset: -9px -10px; }
     .checkbox.checked::after { width: 6px; height: 11px; }
@@ -560,9 +567,9 @@
     .star-toggle:active, .task-menu-btn:active, .expand-toggle:active { background: var(--surface2); }
 
     /* Indent guides + note/meta rows follow the new checkbox centre */
-    .subtask-list::before, .shortlist-subitems::before { left: 39px; }
-    .task-note-area::before { left: 39px; }
-    .task-meta, .task-note-area { padding-left: 58px; }
+    .subtask-list::before, .shortlist-subitems::before { left: 15px; }
+    .task-note-area::before { left: 15px; }
+    .task-meta, .task-note-area { padding-left: 34px; }
     .task-meta { gap: 8px; padding-top: 0; padding-bottom: 4px; margin-top: -6px; }
     .tag-pill, .due-badge { font-size: 14px; min-height: 28px; padding: 0 12px; display: inline-flex; align-items: center; }
     .tag-pill .remove-tag { font-size: 14px; }
@@ -570,9 +577,9 @@
 
     /* Shortlist card */
     .shortlist { padding: 8px 16px 8px; margin-bottom: 12px; }
-    .shortlist-items { margin: 0 -16px; }
+    .shortlist-items { margin: 0 -8px; }
     .shortlist-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
-    .crumb-line { padding: 2px 8px 0 28px; margin-bottom: -6px; font-size: 13px; }
+    .crumb-line { padding: 2px 8px 0 4px; margin-bottom: -6px; font-size: 13px; }
     .add-root-btn { min-height: 48px; padding: 0 16px; gap: 12px; font-size: 16px; }
     .add-root-btn svg { width: 24px; height: 24px; }
 
@@ -668,7 +675,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v24</div>
+  <div class="app-version" title="App version">v26</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -2200,11 +2207,32 @@ function handleTaskSortEnd() {
 // old instances simply go away with the old (now-detached) DOM nodes they were
 // attached to, same as how the old dragstart/dragend listeners were re-bound
 // fresh on every render rather than explicitly torn down.
+// On phone-width screens the grip is hidden and a row is dragged by pressing and
+// holding it (a quick tap still edits/toggles, and moving before the hold ends
+// scrolls the page as normal). Wider screens keep the hover grip.
+function dragOptions(gripSelector) {
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    return {
+      delay: 300,
+      touchStartThreshold: 8,
+      forceFallback: true,
+      filter: '.checkbox, button, a, .note-indicator',
+      preventOnFilter: false,
+      onChoose: () => {
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        const sel = window.getSelection(); if (sel) sel.removeAllRanges();
+        if (navigator.vibrate) navigator.vibrate(15);
+      }
+    };
+  }
+  return { handle: gripSelector };
+}
+
 function initTaskSortable() {
   document.querySelectorAll('#checklist, .subtask-list').forEach(ul => {
     Sortable.create(ul, {
       group: 'main-checklist',
-      handle: '.drag-handle',
+      ...dragOptions('.drag-handle'),
       animation: 150,
       ghostClass: 'sortable-ghost',
       chosenClass: 'dragging',
@@ -2419,7 +2447,7 @@ function initShortlistSortable() {
   const list = document.getElementById('shortlist-items');
   if (!list) return;
   Sortable.create(list, {
-    handle: '.drag-handle:not(.spacer)',
+    ...dragOptions('.drag-handle:not(.spacer)'),
     animation: 150,
     ghostClass: 'sortable-ghost',
     chosenClass: 'dragging',
