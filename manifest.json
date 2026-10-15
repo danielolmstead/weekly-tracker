@@ -1,6 +1,6 @@
 {
-  "name": "Weekly Tracker",
-  "short_name": "Tracker",
+  "name": "This Week",
+  "short_name": "This Week",
   "description": "A multi-level weekly checklist and task tracker.",
   "start_url": "./index.html",
   "scope": "./",

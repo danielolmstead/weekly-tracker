@@ -1,6 +1,6 @@
-// Weekly Tracker service worker
+// This Week service worker
 // Bump CACHE_NAME any time you deploy a change so clients pick up the new files.
-const CACHE_NAME = 'weekly-tracker-v26';
+const CACHE_NAME = 'this-week-v27';
 
 const APP_SHELL = [
   './',

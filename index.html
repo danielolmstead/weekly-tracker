@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weekly Tracker</title>
+<title>This Week</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2d6a4f" id="theme-meta">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Weekly Tracker">
+<meta name="apple-mobile-web-app-title" content="This Week">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
@@ -647,7 +647,7 @@
 
 <nav id="sidebar">
   <div class="sidebar-top">
-    <div class="app-name">Weekly Tracker</div>
+    <div class="app-name">This Week</div>
     <div class="sidebar-actions">
       <button onclick="openNewWeekModal()"><span data-icon="plus" data-icon-size="12"></span> New Week</button>
     </div>
@@ -675,7 +675,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v26</div>
+  <div class="app-version" title="App version">v27</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -1105,7 +1105,7 @@ function importData(event) {
       // Allow direct state JSON too
       importedState = data;
     } else {
-      alert('That file doesn\'t look like a Weekly Tracker backup. Make sure you exported it from this app.');
+      alert('That file doesn\'t look like a This Week backup. Make sure you exported it from this app.');
       input.value = '';
       return;
     }
@@ -2794,7 +2794,7 @@ function driveOpenPicker() {
       .setOAuthToken(driveAccessToken)
       .setDeveloperKey(DRIVE_API_KEY)
       .addView(view)
-      .setTitle('Choose your Weekly Tracker data file')
+      .setTitle('Choose your This Week data file')
       .setCallback((data) => {
         if (data.action === google.picker.Action.PICKED) resolve(data.docs[0].id);
         else if (data.action === google.picker.Action.CANCEL) resolve(null);
@@ -2842,7 +2842,7 @@ async function driveConnect() {
       setDriveButton('Connect Drive', false, false);
       driveShowModal(
         'Connect Google Drive',
-        'Is this the first device you\'re connecting, or do you already have Weekly Tracker data synced from another device?',
+        'Is this the first device you\'re connecting, or do you already have This Week data synced from another device?',
         [
           { label: 'I have existing data', accent: false, onClick: driveConnectExisting },
           { label: 'Start fresh here', accent: true, onClick: driveConnectFresh }
@@ -2879,7 +2879,7 @@ async function driveConnectExisting() {
     const meta = await driveGetFileMeta(fileId);
     const remoteContent = await driveGetFileContent(fileId);
     let remoteState;
-    try { remoteState = JSON.parse(remoteContent); } catch (e) { throw new Error('That file isn\'t Weekly Tracker data'); }
+    try { remoteState = JSON.parse(remoteContent); } catch (e) { throw new Error('That file isn\'t This Week data'); }
     driveSetFileId(fileId);
     driveApplyRemoteState(remoteState);
     driveSetLastRemoteModified(meta.modifiedTime);
@@ -3065,7 +3065,7 @@ function showInstallBanner() {
     white-space: nowrap;
   `;
   banner.innerHTML = `
-    <span>📲 Install Weekly Tracker as an app</span>
+    <span>📲 Install This Week as an app</span>
     <button onclick="installApp()" style="padding:6px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;">Install</button>
     <button onclick="this.closest('#install-banner').remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:2px 4px;">×</button>
   `;
