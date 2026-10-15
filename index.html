@@ -497,6 +497,8 @@
   @media (max-width: 768px) {
     /* No hover on touch screens: keep the star outline always visible */
     .star-toggle { opacity: 1; }
+    /* Softer gray for empty (unstarred) stars on touch screens */
+    .star-toggle:not(.starred), .task-item .star-toggle:not(.starred), .shortlist-item .star-toggle:not(.starred) { opacity: 0.5; }
     .hamburger-btn { display: inline-flex; }
     /* Sidebar becomes an off-canvas drawer: fixed to the left edge, slid out
        of view by default, and slid in on top of everything (above the
@@ -564,6 +566,8 @@
     .task-menu-btn,
     .expand-toggle, .shortlist-item .expand-toggle { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
     .star-toggle svg, .task-menu-btn svg, .expand-toggle svg { width: 24px; height: 24px; }
+    /* Stars a touch smaller than the other icons; the 40px tap target is unchanged */
+    .star-toggle svg { width: 20px; height: 20px; }
     .star-toggle:active, .task-menu-btn:active, .expand-toggle:active { background: var(--surface2); }
 
     /* Indent guides + note/meta rows follow the new checkbox centre */
