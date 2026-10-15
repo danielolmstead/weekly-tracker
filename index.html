@@ -113,6 +113,10 @@
   .drive-status { font-size: 11px; color: var(--text3); text-align: center; min-height: 14px; }
   .drive-status.error { color: var(--danger); }
   .drive-status.syncing { color: var(--accent); }
+  /* Floating "reconnect" chip: the sidebar (with the Drive button) is hidden on phones */
+  .drive-chip { display: none; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 120; align-items: center; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); box-shadow: var(--shadow-md); font-family: var(--font); font-size: 12px; cursor: pointer; white-space: nowrap; max-width: calc(100vw - 24px); }
+  .drive-chip.show { display: inline-flex; }
+  .drive-chip:hover, .drive-chip:active { color: var(--accent); border-color: var(--accent); }
   .theme-popover { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 8px; display: none; z-index: 100; }
   .theme-popover.open { display: flex; gap: 6px; }
   .theme-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; padding: 0; transition: transform 0.15s; outline: 1.5px solid var(--border); outline-offset: -1.5px; }
@@ -679,7 +683,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v28</div>
+  <div class="app-version" title="App version">v29</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -2661,7 +2665,7 @@ const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILE_NAME = 'Weekly Tracker Data.json';
 const DRIVE_MIME = 'application/json';
 
-let driveAccessToken = null;   // in-memory only — never persisted to localStorage
+let driveAccessToken = null;   // also cached in localStorage (see driveStoreToken) until it expires
 let driveTokenClient = null;
 let driveTokenExpiresAt = 0;
 let driveGisReady = false;
@@ -2679,6 +2683,20 @@ function setDriveStatus(text, cls) {
   const el = document.getElementById('drive-status');
   el.textContent = text || '';
   el.className = 'drive-status' + (cls ? ' ' + cls : '');
+  driveUpdateChip(cls === 'error' && /^Reconnect/i.test(text || '') && !!driveGetFileId());
+}
+function driveUpdateChip(show) {
+  let el = document.getElementById('drive-chip');
+  if (!el) {
+    if (!show) return;
+    el = document.createElement('button');
+    el.id = 'drive-chip';
+    el.className = 'drive-chip';
+    el.textContent = 'Sync paused \u00b7 tap to reconnect';
+    el.onclick = () => driveButtonClick();
+    document.body.appendChild(el);
+  }
+  el.classList.toggle('show', !!show);
 }
 function setDriveButton(label, connected, busy) {
   document.getElementById('drive-btn-label').textContent = label;
@@ -2710,6 +2728,26 @@ async function driveEnsureLibsLoaded() {
   }
 }
 
+// The access token (valid ~1 hour) is cached so reopening the app within the hour
+// needs no sign-in. drive.file scope: it only reaches files this app created.
+const DRIVE_TOKEN_KEY = 'wt_drive_token';
+function driveTokenValid() { return !!driveAccessToken && Date.now() < driveTokenExpiresAt; }
+function driveStoreToken(token, expiresAt) {
+  try { localStorage.setItem(DRIVE_TOKEN_KEY, JSON.stringify({ t: token, exp: expiresAt })); } catch (e) {}
+}
+function driveClearToken() {
+  driveAccessToken = null; driveTokenExpiresAt = 0;
+  try { localStorage.removeItem(DRIVE_TOKEN_KEY); } catch (e) {}
+}
+function driveLoadStoredToken() {
+  try {
+    const v = JSON.parse(localStorage.getItem(DRIVE_TOKEN_KEY) || 'null');
+    if (v && v.t && v.exp > Date.now()) { driveAccessToken = v.t; driveTokenExpiresAt = v.exp; return true; }
+    localStorage.removeItem(DRIVE_TOKEN_KEY);
+  } catch (e) {}
+  return false;
+}
+
 function driveGetTokenClient() {
   if (!driveTokenClient) {
     driveTokenClient = google.accounts.oauth2.initTokenClient({
@@ -2733,13 +2771,16 @@ function driveRequestToken(interactive) {
       if (resp && resp.access_token) {
         driveAccessToken = resp.access_token;
         driveTokenExpiresAt = Date.now() + ((resp.expires_in || 3600) * 1000) - 60000;
+        driveStoreToken(driveAccessToken, driveTokenExpiresAt);
         resolve(resp.access_token);
       } else {
         reject(resp && resp.error ? new Error(resp.error) : new Error('No access token'));
       }
     };
     client.error_callback = (err) => reject(err || new Error('Auth failed'));
-    try { client.requestAccessToken(interactive ? { prompt: 'consent' } : { prompt: '' }); }
+    // prompt:'' (not 'consent'): Google skips the consent screen when this account has
+    // already approved the app, and only shows it when it really is needed.
+    try { client.requestAccessToken({ prompt: '' }); }
     catch (e) { reject(e); }
   });
 }
@@ -2753,7 +2794,7 @@ async function driveApiFetch(url, options) {
   options = options || {};
   options.headers = Object.assign({}, options.headers, { Authorization: 'Bearer ' + driveAccessToken });
   const res = await fetch(url, options);
-  if (res.status === 401) throw new Error('drive-auth-expired');
+  if (res.status === 401) { driveClearToken(); throw new Error('drive-auth-expired'); }
   if (!res.ok) throw new Error('Drive API error: ' + res.status);
   return res;
 }
@@ -2827,8 +2868,54 @@ function driveCloseModal() { document.getElementById('drive-modal').classList.re
 
 // ─── Main flows ─────────────────────────────────────────────────────────────
 function driveButtonClick() {
-  if (driveGetFileId() && driveAccessToken) { driveSyncNow(); return; }
+  if (driveGetFileId() && driveTokenValid()) { driveSyncNow(); return; }
+  if (driveGetFileId()) { driveReconnect(); return; }
   driveConnect();
+}
+
+// Reconnect an already-set-up device (no connect/choose-file questions). Must be
+// called straight from a tap so the browser lets the Google popup open.
+async function driveReconnect() {
+  if (driveConnectFlowActive || driveSyncInFlight) return;
+  driveConnectFlowActive = true;
+  setDriveButton('Connecting\u2026', false, true);
+  setDriveStatus('Reconnecting\u2026', 'syncing');
+  try {
+    await driveEnsureLibsLoaded();
+    await driveRequestToken(true);
+  } catch (e) {
+    driveConnectFlowActive = false;
+    setDriveButton('Connect Drive', false, false);
+    setDriveStatus('Reconnect needed', 'error');
+    return;
+  }
+  driveConnectFlowActive = false;
+  setDriveButton('Sync now', true, false);
+  driveSyncNow();
+}
+
+// Phones block popups that aren't triggered by a tap, so a silent reconnect at launch
+// usually fails. Instead, the first tap anywhere in the app reconnects (the tap itself
+// still works normally). One attempt per launch / return to the app.
+let driveTapArmed = false;
+function driveArmTapReconnect() {
+  if (driveTapArmed || !driveGetFileId() || !driveGisReady) return;
+  driveTapArmed = true;
+  const handler = () => {
+    document.removeEventListener('click', handler, true);
+    driveTapArmed = false;
+    if (!driveTokenValid()) driveReconnect();
+  };
+  document.addEventListener('click', handler, true);
+}
+// If the token has run out (e.g. app left open in the background), show the chip and
+// arm the tap reconnect instead of attempting a popup nobody tapped for.
+function driveCheckExpiry() {
+  if (!driveGetFileId() || !driveGisReady || driveConnectFlowActive || driveSyncInFlight) return;
+  if (driveTokenValid()) return;
+  setDriveButton('Connect Drive', false, false);
+  setDriveStatus('Reconnect needed', 'error');
+  driveArmTapReconnect();
 }
 
 async function driveConnect() {
@@ -2938,6 +3025,7 @@ async function driveSyncNow() {
   } catch (e) {
     setDriveButton('Sync now', true, false);
     setDriveStatus(e.message === 'drive-auth-expired' ? 'Reconnect needed' : 'Sync failed', 'error');
+    if (e.message === 'drive-auth-expired') driveArmTapReconnect();
   } finally {
     driveSyncInFlight = false;
   }
@@ -2961,7 +3049,8 @@ async function drivePull(fileId) {
 // quietly in the background — no spinner, no interruption. A no-op unless
 // already connected with a live token, so nothing pops up uninvited.
 function driveQueueAutoSync() {
-  if (!driveGetFileId() || !driveAccessToken) return;
+  if (!driveGetFileId()) return;
+  if (!driveTokenValid()) { driveCheckExpiry(); return; }
   clearTimeout(driveAutoSyncTimer);
   driveAutoSyncTimer = setTimeout(async () => {
     const fileId = driveGetFileId();
@@ -2983,16 +3072,27 @@ function driveQueueAutoSync() {
 // otherwise it fails silently and the button just sits at "Connect Drive".
 (async function driveInit() {
   if (!driveGetFileId()) return;
+  // Load Google's scripts up front so a later tap can open the popup immediately.
+  try { await driveEnsureLibsLoaded(); } catch (e) {}
+  // Reuse the cached token if it's still good: no sign-in at all.
+  if (driveLoadStoredToken()) {
+    setDriveButton('Sync now', true, false);
+    driveSyncNow();
+    return;
+  }
   try {
-    await driveEnsureLibsLoaded();
     await driveRequestToken(false);
     setDriveButton('Sync now', true, false);
     driveSyncNow();
   } catch (e) {
     setDriveButton('Connect Drive', false, false);
     setDriveStatus('Reconnect needed', 'error');
+    driveArmTapReconnect();
   }
 })();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') driveCheckExpiry();
+});
 
 // ─── PWA ──────────────────────────────────────────────────────────────────────
 // Service worker + update check. A new deploy changes sw.js (its CACHE_NAME), and
