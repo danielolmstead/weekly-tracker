@@ -702,7 +702,10 @@
   <div class="sidebar-bottom">
     <button class="settings-btn" id="settings-btn" onclick="toggleSettingsMenu(event)" aria-haspopup="true" aria-expanded="false"><span data-icon="settings" data-icon-size="14"></span> Settings</button>
     <div class="settings-menu" id="settings-menu" role="menu" onclick="event.stopPropagation()">
-      <button class="settings-item" onclick="toggleDark()" id="dark-btn"></button>
+      <div class="settings-row">
+        <div class="settings-row-label"><span data-icon="moon" data-icon-size="14"></span> Mode</div>
+        <div class="font-seg" id="dark-seg" role="radiogroup" aria-label="Light or dark mode"></div>
+      </div>
       <div class="settings-row">
         <div class="settings-row-label"><span data-icon="palette" data-icon-size="14"></span> Theme color</div>
         <div class="theme-swatches" id="theme-swatches"></div>
@@ -720,7 +723,7 @@
       <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
       <div class="settings-sep"></div>
       <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-      <div class="app-version" title="App version">v39</div>
+      <div class="app-version" title="App version">v40</div>
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
@@ -1040,16 +1043,21 @@ if (state.currentWeekId) {
 function uid() { return Math.random().toString(36).slice(2,9); }
 
 // ─── DARK MODE ───────────────────────────────────────────────────────────────
-function toggleDark() {
-  document.body.classList.toggle('dark');
-  localStorage.setItem('wt_dark', document.body.classList.contains('dark') ? '1' : '0');
+function setDark(isDark) {
+  document.body.classList.toggle('dark', !!isDark);
+  try { localStorage.setItem('wt_dark', isDark ? '1' : '0'); } catch (e) {}
   updateDarkBtn();
   applyTheme(currentTheme); // re-apply so accent colors switch to dark-mode variant
 }
+// Draws the Light / Dark segmented control in Settings (name kept: import calls it).
 function updateDarkBtn() {
+  const el = document.getElementById('dark-seg');
+  if (!el) return;
   const isDark = document.body.classList.contains('dark');
-  const btn = document.getElementById('dark-btn');
-  btn.innerHTML = icon(isDark ? 'sun' : 'moon', 14) + ' <span>' + (isDark ? 'Light mode' : 'Dark mode') + '</span>';
+  el.innerHTML = [['light', 'Light', false], ['dark', 'Dark', true]].map(([k, label, d]) =>
+    `<button class="${d === isDark ? 'active' : ''}" role="radio" aria-checked="${d === isDark}"
+      onclick="setDark(${d}); event.stopPropagation();">${label}</button>`
+  ).join('');
 }
 
 // ─── SEARCH ──────────────────────────────────────────────────────────────────
@@ -3308,7 +3316,7 @@ async function installApp() {
   if (banner) banner.remove();
 }
 
-// (theme-color meta is now updated inside applyTheme, which toggleDark calls)
+// (theme-color meta is now updated inside applyTheme, which setDark calls)
 </script>
 
 </body>
