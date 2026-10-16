@@ -746,7 +746,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v41</div>
+  <div class="app-version" title="App version">v42</div>
 </div>
 
 <div id="main">
@@ -1528,20 +1528,60 @@ function selectWeek(id, doSave = true) {
 // These just toggle the .open class on the sidebar and its backdrop; above
 // the breakpoint the class has no visual effect, so it's safe to call
 // unconditionally (e.g. from selectWeek) on any screen size.
+// Back button: opening the drawer pushes one history entry, so the phone's back
+// button/gesture (popstate) closes the drawer instead of leaving the app. Closing
+// it any other way (backdrop tap, swipe, picking a week) pops that entry again.
+let drawerHistoryPushed = false;
+let drawerIgnorePops = 0;   // popstate events caused by our own history.back()
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');
   const bd = document.getElementById('sidebar-backdrop');
   if (!sb) return;
   const opening = !sb.classList.contains('open');
-  sb.classList.toggle('open', opening);
-  if (bd) bd.classList.toggle('open', opening);
+  if (!opening) { closeSidebarMobile(); return; }
+  sb.classList.add('open');
+  if (bd) bd.classList.add('open');
+  if (!drawerHistoryPushed) {
+    try { history.pushState({ drawer: true }, ''); drawerHistoryPushed = true; } catch (e) {}
+  }
 }
-function closeSidebarMobile() {
+function closeSidebarMobile(fromPopstate) {
   const sb = document.getElementById('sidebar');
   const bd = document.getElementById('sidebar-backdrop');
   if (sb) sb.classList.remove('open');
   if (bd) bd.classList.remove('open');
+  if (drawerHistoryPushed) {
+    drawerHistoryPushed = false;
+    if (fromPopstate !== true) {
+      drawerIgnorePops++;
+      try { history.back(); } catch (e) { drawerIgnorePops--; }
+    }
+  }
 }
+window.addEventListener('popstate', () => {
+  if (drawerIgnorePops > 0) { drawerIgnorePops--; return; }
+  const sb = document.getElementById('sidebar');
+  if (sb && sb.classList.contains('open')) closeSidebarMobile(true);
+  else drawerHistoryPushed = false;
+});
+// Swipe left on the open drawer to close it (mostly-horizontal, 50px or more).
+(function () {
+  const sb = document.getElementById('sidebar');
+  if (!sb) return;
+  let sx = 0, sy = 0, tracking = false;
+  sb.addEventListener('touchstart', e => {
+    if (!sb.classList.contains('open') || e.touches.length !== 1) { tracking = false; return; }
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true;
+  }, { passive: true });
+  sb.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (dx <= -50 && Math.abs(dx) > Math.abs(dy) * 1.5) closeSidebarMobile();
+  }, { passive: true });
+  sb.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+})();
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSidebarMobile();
 });
