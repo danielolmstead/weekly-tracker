@@ -285,12 +285,12 @@
   .expand-toggle:hover { background: var(--surface); color: var(--text); }
   /* Star toggle to add a task to Today's Shortlist. Follows the drag-handle
      pattern: opacity 0 until the row is hovered so it doesn't add visual
-     noise to un-starred rows, then always opaque + gold once starred. The
+     noise to un-starred rows, then always opaque + accent-colored once starred. The
      `starred` class also fills the star shape via currentColor. */
   .star-toggle { background: none; border: none; padding: 5px; border-radius: 4px; cursor: pointer; color: var(--text3); line-height: 1; opacity: 0; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .task-item:hover .star-toggle { opacity: 1; }
-  .star-toggle:hover { color: var(--warning); background: var(--surface); }
-  .star-toggle.starred { opacity: 1; color: var(--warning); }
+  .star-toggle:hover { color: var(--accent); background: var(--surface); }
+  .star-toggle.starred { opacity: 1; color: var(--accent); }
   .star-toggle.starred svg path { fill: currentColor; }
   /* Today's Shortlist — a compact list of starred tasks that lives above the
      main checklist. Same underlying tasks; toggling done here toggles them
@@ -695,7 +695,7 @@
       <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
       <div class="settings-sep"></div>
       <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-      <div class="app-version" title="App version">v34</div>
+      <div class="app-version" title="App version">v35</div>
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
