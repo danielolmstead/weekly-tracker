@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Courier+Prime:wght@400;700&family=Fredoka:wght@400;500;600&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f5f4f0;
@@ -39,7 +39,7 @@
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
     --radius: 8px;
     --radius-lg: 12px;
-    --font: 'DM Sans', sans-serif;
+    --font: 'Source Sans 3', sans-serif; /* default; applyFont() overrides from the Settings font control */
     --mono: 'DM Mono', monospace;
     --sidebar-w: 220px;
   }
@@ -106,6 +106,10 @@
   .settings-row-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); margin-bottom: 8px; }
   .settings-row-label svg { color: var(--text2); }
   .theme-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .font-seg { display: flex; padding: 3px; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); }
+  .font-seg button { flex: 1; border: none; background: none; color: var(--text2); font-size: 13px; padding: 6px 4px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .font-seg button:hover { color: var(--text); }
+  .font-seg button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .settings-sep { height: 1px; background: var(--border); margin: 4px 0; }
   .app-version { padding: 6px 10px 4px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); }
 
@@ -639,6 +643,7 @@
     .settings-row-label { font-size: 16px; }
     .theme-swatches { gap: 8px; }
     .theme-swatch { width: 28px; height: 28px; }
+    .font-seg button { min-height: 40px; font-size: 16px; }
     .app-version { font-size: 12px; }
 
     /* Dialogs */
@@ -696,12 +701,16 @@
         <div class="settings-row-label"><span data-icon="palette" data-icon-size="14"></span> Theme color</div>
         <div class="theme-swatches" id="theme-swatches"></div>
       </div>
+      <div class="settings-row">
+        <div class="settings-row-label"><span data-icon="type" data-icon-size="14"></span> Font</div>
+        <div class="font-seg" id="font-seg" role="radiogroup" aria-label="Font"></div>
+      </div>
       <div class="settings-sep"></div>
       <button class="settings-item" onclick="closeSettingsMenu(); exportData()" title="Export all data to a backup file"><span data-icon="download" data-icon-size="14"></span> Export data</button>
       <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
       <div class="settings-sep"></div>
       <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-      <div class="app-version" title="App version">v37</div>
+      <div class="app-version" title="App version">v38</div>
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
@@ -842,6 +851,7 @@ const ICON_PATHS = {
   check: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   settings: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
+  type: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
   palette: '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
   search: '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
   'chevron-down': '<path d="m6 9 6 6 6-6"/>',
@@ -914,6 +924,33 @@ function renderThemePicker() {
   }).join('');
 }
 
+// ─── FONT ────────────────────────────────────────────────────────────────────
+// Three choices, shown as a segmented control in Settings. Each label is drawn in its own font.
+const FONTS = {
+  mono:  { name: 'Courier Prime', label: 'Mono',  stack: "'Courier Prime', 'Courier New', monospace" },
+  round: { name: 'Fredoka',       label: 'Round', stack: "'Fredoka', system-ui, sans-serif" },
+  sans:  { name: 'Source Sans 3', label: 'Sans',  stack: "'Source Sans 3', system-ui, sans-serif" }
+};
+let currentFont = localStorage.getItem('wt_font') || 'sans';
+if (!FONTS[currentFont]) currentFont = 'sans';
+
+function applyFont(key) {
+  if (!FONTS[key]) key = 'sans';
+  currentFont = key;
+  document.documentElement.style.setProperty('--font', FONTS[key].stack);
+  try { localStorage.setItem('wt_font', key); } catch (e) {}
+  renderFontPicker();
+}
+function renderFontPicker() {
+  const el = document.getElementById('font-seg');
+  if (!el) return;
+  el.innerHTML = Object.entries(FONTS).map(([key, f]) =>
+    `<button class="${key === currentFont ? 'active' : ''}" role="radio" aria-checked="${key === currentFont}"
+      style="font-family:${f.stack};" title="${f.name}" aria-label="${f.name}"
+      onclick="applyFont('${key}'); event.stopPropagation();">${f.label}</button>`
+  ).join('');
+}
+
 function closeSettingsMenu() {
   const m = document.getElementById('settings-menu');
   const b = document.getElementById('settings-btn');
@@ -959,6 +996,7 @@ load();
 if (localStorage.getItem('wt_dark') === '1') document.body.classList.add('dark');
 hydrateStaticIcons();
 applyTheme(currentTheme);
+applyFont(currentFont);
 updateDarkBtn();
 renderSidebar();
 if (state.currentWeekId) {
