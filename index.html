@@ -550,6 +550,12 @@
        rows are positioned from that, so keep them in step if it changes. */
     body { font-size: 16px; }
     #header { padding: 12px 16px; gap: 8px; }
+    /* App bar uses the theme accent. --on-accent (set in applyTheme) is white in
+       light mode and near-black in dark mode, because dark-mode accents are bright. */
+    #header { background: var(--accent); border-bottom-color: var(--accent); color: var(--on-accent, #fff); }
+    #header .week-subtitle, #header .progress-text { color: var(--on-accent, #fff); }
+    #header .btn.btn-icon { background: color-mix(in srgb, var(--on-accent, #fff) 16%, transparent); border-color: transparent; color: var(--on-accent, #fff); }
+    #header .btn.btn-icon:hover, #header .btn.btn-icon:active { background: color-mix(in srgb, var(--on-accent, #fff) 28%, transparent); }
     .btn { font-size: 14px; min-height: 40px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; }
     .btn.btn-icon { width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 12px; }
     .btn.btn-icon svg { width: 24px; height: 24px; }
@@ -695,7 +701,7 @@
       <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
       <div class="settings-sep"></div>
       <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-      <div class="app-version" title="App version">v36</div>
+      <div class="app-version" title="App version">v37</div>
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
@@ -882,6 +888,11 @@ function applyTheme(themeKey) {
   root.style.setProperty('--accent', c.a);
   root.style.setProperty('--accent-bg', c.bg);
   root.style.setProperty('--accent-hover', c.h);
+  // Text/icon color for things drawn on a solid accent background (mobile app bar)
+  root.style.setProperty('--on-accent', mode === 'dark' ? '#141412' : '#ffffff');
+  // Phone status bar follows the accent so it matches the app bar
+  const themeMeta = document.getElementById('theme-meta');
+  if (themeMeta) themeMeta.content = c.a;
   currentTheme = themeKey;
   localStorage.setItem('wt_theme', themeKey);
   renderThemePicker();
@@ -3227,12 +3238,7 @@ async function installApp() {
   if (banner) banner.remove();
 }
 
-// Update theme-color meta when dark mode toggles
-const _origToggleDark = toggleDark;
-window.toggleDark = function() {
-  _origToggleDark();
-  document.getElementById('theme-meta').content = document.body.classList.contains('dark') ? '#141412' : '#2d6a4f';
-};
+// (theme-color meta is now updated inside applyTheme, which toggleDark calls)
 </script>
 
 </body>
