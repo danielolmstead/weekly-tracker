@@ -295,6 +295,9 @@
   .shortlist { margin-bottom: 20px; padding: 14px 18px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
   .shortlist-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
   .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--warning); border-radius: 2px; }
+  /* "This Week" heading above the full list; same look as the Today header, accent bar. */
+  .list-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+  .list-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
   /* Root-level shortlist rows should land in the same horizontal spot as
      root-level main-checklist rows, so the two lists read as one aligned
      column. The card's own 18px side padding (see .shortlist above) would
@@ -591,6 +594,7 @@
     .shortlist { padding: 8px 16px 8px; margin-bottom: 12px; }
     .shortlist-items { margin: 0 -8px; }
     .shortlist-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
+    .list-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
     .crumb-line { padding: 2px 8px 0 4px; margin-bottom: -6px; font-size: 13px; }
     .add-root-btn { min-height: 48px; padding: 0 16px; gap: 12px; font-size: 16px; }
     .add-root-btn svg { width: 24px; height: 24px; }
@@ -687,7 +691,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v30</div>
+  <div class="app-version" title="App version">v31</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -716,12 +720,13 @@
          starred as being "for today". Rendered from the same underlying
          tasks, so toggling done/star state anywhere keeps both in sync. -->
     <div id="shortlist" class="shortlist" style="display:none;">
-      <div class="shortlist-header">Today's Shortlist<button class="btn btn-sm shortlist-newday" onclick="newDay()" title="Clear checked-off tasks and start a fresh shortlist">New day</button></div>
+      <div class="shortlist-header">Today<button class="btn btn-sm shortlist-newday" onclick="newDay()" title="Clear checked-off tasks and start a fresh shortlist">New day</button></div>
       <ul class="shortlist-items" id="shortlist-items"></ul>
       <button class="add-root-btn shortlist-add" onclick="addShortlistTask()" title="Add a task to this week's list, already starred for today">
         <span data-icon="plus" data-icon-size="16"></span> Add task
       </button>
     </div>
+    <div class="list-header" id="week-list-header" style="display:none;">This Week</div>
     <ul class="checklist" id="checklist" style="display:none;"></ul>
     <button class="add-root-btn" id="add-root-btn" onclick="addRootTask()" style="display:none;">
       <span data-icon="plus" data-icon-size="16"></span> Add task
@@ -1377,6 +1382,7 @@ document.addEventListener('click', () => {
 function showEmpty() {
   document.getElementById('empty-state').style.display = '';
   document.getElementById('checklist').style.display = 'none';
+  document.getElementById('week-list-header').style.display = 'none';
   document.getElementById('add-root-btn').style.display = 'none';
   document.getElementById('week-title').textContent = 'Select or create a week';
   setWeekSubtitle('');
@@ -1392,6 +1398,7 @@ function selectWeek(id, doSave = true) {
   if (!week) return;
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('checklist').style.display = '';
+  document.getElementById('week-list-header').style.display = '';
   document.getElementById('add-root-btn').style.display = '';
   document.getElementById('week-title').textContent = headerTitleFromLabel(week.label);
   setWeekSubtitle(week.range);
@@ -2363,7 +2370,7 @@ function renderTaskList(tasks, container, depth = 0) {
           <button class="task-menu-item danger" onclick="deleteTask('${t.id}'); closeAllTaskMenus();">${icon('trash', 13)}<span>Delete</span></button>
         </div>
         ${expandToggle}
-        <button class="star-toggle ${t.shortlisted ? 'starred' : ''}" onclick="toggleStar('${t.id}')" title="${t.shortlisted ? "Remove from Today's Shortlist" : "Add to Today's Shortlist"}">${icon('star', 14)}</button>
+        <button class="star-toggle ${t.shortlisted ? 'starred' : ''}" onclick="toggleStar('${t.id}')" title="${t.shortlisted ? "Remove from Today" : "Add to Today"}">${icon('star', 14)}</button>
         ${t.id === pendingDeleteId ? `
           <div class="delete-confirm">
             <button class="delete-confirm-btn cancel" onclick="cancelDelete()" title="Cancel">${icon('x', 13)}</button>
@@ -2540,7 +2547,7 @@ function renderShortlistItems(tasks, container, isRoot) {
     const checkClass = t.done ? 'checked' : (isPartial ? 'partial' : '');
     const isCollapsed = t.shortlistCollapsed !== undefined ? !!t.shortlistCollapsed : true;
     const starHtml = t.shortlisted
-      ? `<button class="star-toggle starred" onclick="toggleStar('${t.id}')" title="Remove from Today's Shortlist">${icon('star', 14)}</button>`
+      ? `<button class="star-toggle starred" onclick="toggleStar('${t.id}')" title="Remove from Today">${icon('star', 14)}</button>`
       : '';
     const chevronHtml = hasChildren
       ? `<button class="expand-toggle" onclick="toggleShortlistCollapse('${t.id}')" title="${isCollapsed ? 'Expand' : 'Collapse'}">${icon(isCollapsed ? 'chevron-left' : 'chevron-down', 14)}</button>`
