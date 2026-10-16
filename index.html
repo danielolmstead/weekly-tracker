@@ -746,7 +746,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v42</div>
+  <div class="app-version" title="App version">v43</div>
 </div>
 
 <div id="main">
@@ -1531,8 +1531,8 @@ function selectWeek(id, doSave = true) {
 // Back button: opening the drawer pushes one history entry, so the phone's back
 // button/gesture (popstate) closes the drawer instead of leaving the app. Closing
 // it any other way (backdrop tap, swipe, picking a week) pops that entry again.
-let drawerHistoryPushed = false;
-let drawerIgnorePops = 0;   // popstate events caused by our own history.back()
+var drawerHistoryPushed = false;   // var (hoisted): selectWeek() calls closeSidebarMobile() during init, before this line runs
+var drawerIgnorePops = 0;   // popstate events caused by our own history.back()
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');
   const bd = document.getElementById('sidebar-backdrop');
