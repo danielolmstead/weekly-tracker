@@ -94,15 +94,20 @@
   .week-menu-item:hover { background: var(--surface2); }
   .week-menu-item.danger { color: var(--danger); }
   .week-menu-item.danger:hover { background: var(--danger-bg); }
-  .sidebar-bottom { padding: 12px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-  .dark-toggle { background: none; border: 1px solid var(--border); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 12px; font-family: var(--font); transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
-  .dark-toggle:hover { background: var(--surface2); }
-  .sidebar-bottom-left { display: flex; align-items: center; gap: 6px; }
-  .theme-btn-wrap { position: relative; }
-  .data-btns { display: flex; gap: 4px; }
-  .app-version { padding: 0 12px 10px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); }
-  .data-btn { background: none; border: 1px solid var(--border); padding: 6px 8px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-family: var(--font); transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; }
-  .data-btn:hover { background: var(--surface2); color: var(--text); }
+  .sidebar-bottom { padding: 12px; border-top: 1px solid var(--border); position: relative; }
+  .settings-btn { width: 100%; background: none; border: 1px solid var(--border); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 12px; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .settings-btn:hover, .settings-btn.open { background: var(--surface2); color: var(--text); }
+  .settings-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 6px; display: none; z-index: 100; min-width: 200px; }
+  .settings-menu.open { display: block; }
+  .settings-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 8px 10px; font-size: 12px; background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
+  .settings-item:hover { background: var(--surface2); }
+  .settings-item svg { color: var(--text2); }
+  .settings-row { padding: 8px 10px; }
+  .settings-row-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); margin-bottom: 8px; }
+  .settings-row-label svg { color: var(--text2); }
+  .theme-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .settings-sep { height: 1px; background: var(--border); margin: 4px 0; }
+  .app-version { padding: 6px 10px 4px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); }
 
   /* DRIVE SYNC */
   .drive-sync-row { padding: 10px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
@@ -117,8 +122,6 @@
   .drive-chip { display: none; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 120; align-items: center; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); box-shadow: var(--shadow-md); font-family: var(--font); font-size: 12px; cursor: pointer; white-space: nowrap; max-width: calc(100vw - 24px); }
   .drive-chip.show { display: inline-flex; }
   .drive-chip:hover, .drive-chip:active { color: var(--accent); border-color: var(--accent); }
-  .theme-popover { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 8px; display: none; z-index: 100; }
-  .theme-popover.open { display: flex; gap: 6px; }
   .theme-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; padding: 0; transition: transform 0.15s; outline: 1.5px solid var(--border); outline-offset: -1.5px; }
   .theme-swatch:hover { transform: scale(1.12); }
   .theme-swatch.active { border-color: var(--text); outline: none; }
@@ -613,7 +616,7 @@
     #sidebar { width: min(320px, 85vw); min-width: 0; }
     .sidebar-top { padding: 20px 16px 12px; }
     .app-name { font-size: 14px; }
-    .sidebar-actions button, .drive-sync-btn, .dark-toggle { font-size: 14px; min-height: 48px; padding: 0 16px; }
+    .sidebar-actions button, .drive-sync-btn, .settings-btn { font-size: 14px; min-height: 48px; padding: 0 16px; }
     .weeks-list { padding: 8px 12px; }
     .week-item { min-height: 48px; padding: 0 8px 0 16px; border-radius: 28px; margin-bottom: 4px; }
     .week-item-label { font-size: 14px; }
@@ -623,10 +626,13 @@
     .week-menu-popover { min-width: 180px; padding: 8px 0; }
     .week-menu-item { min-height: 48px; padding: 0 16px; font-size: 16px; border-radius: 0; display: flex; align-items: center; }
     .drive-status { font-size: 12px; }
-    .data-btn { width: 48px; height: 48px; padding: 0; justify-content: center; }
-    .data-btn svg, .dark-toggle svg { width: 20px; height: 20px; }
-    .theme-swatch { width: 32px; height: 32px; }
-    .theme-popover.open { gap: 10px; padding: 12px; }
+    .settings-btn svg, .settings-item svg { width: 20px; height: 20px; }
+    .settings-menu { min-width: 280px; padding: 8px; }
+    .settings-row-label svg { width: 20px; height: 20px; }
+    .settings-item { min-height: 48px; font-size: 16px; padding: 0 12px; }
+    .settings-row-label { font-size: 16px; }
+    .theme-swatches { gap: 8px; }
+    .theme-swatch { width: 28px; height: 28px; }
     .app-version { font-size: 12px; }
 
     /* Dialogs */
@@ -677,21 +683,22 @@
     <div class="drive-status" id="drive-status"></div>
   </div>
   <div class="sidebar-bottom">
-    <div class="sidebar-bottom-left">
-      <button class="dark-toggle" onclick="toggleDark()" id="dark-btn"><span id="dark-btn-icon"></span> <span id="dark-btn-label">Dark</span></button>
-      <div class="theme-btn-wrap">
-        <button class="data-btn" onclick="toggleThemePicker(event)" title="Change theme color"><span data-icon="palette"></span></button>
-        <div class="theme-popover" id="theme-popover"></div>
+    <button class="settings-btn" id="settings-btn" onclick="toggleSettingsMenu(event)" aria-haspopup="true" aria-expanded="false"><span data-icon="settings" data-icon-size="14"></span> Settings</button>
+    <div class="settings-menu" id="settings-menu" role="menu" onclick="event.stopPropagation()">
+      <button class="settings-item" onclick="toggleDark()" id="dark-btn"></button>
+      <div class="settings-row">
+        <div class="settings-row-label"><span data-icon="palette" data-icon-size="14"></span> Theme color</div>
+        <div class="theme-swatches" id="theme-swatches"></div>
       </div>
-    </div>
-    <div class="data-btns">
-      <button class="data-btn" onclick="exportData()" title="Export all data to a backup file"><span data-icon="download"></span></button>
-      <button class="data-btn" onclick="document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload"></span></button>
+      <div class="settings-sep"></div>
+      <button class="settings-item" onclick="closeSettingsMenu(); exportData()" title="Export all data to a backup file"><span data-icon="download" data-icon-size="14"></span> Export data</button>
+      <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
+      <div class="settings-sep"></div>
+      <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
+      <div class="app-version" title="App version">v34</div>
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
-  <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v33</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -828,6 +835,7 @@ const ICON_PATHS = {
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  settings: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
   palette: '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
   search: '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
   'chevron-down': '<path d="m6 9 6 6 6-6"/>',
@@ -880,7 +888,7 @@ function applyTheme(themeKey) {
 }
 
 function renderThemePicker() {
-  const el = document.getElementById('theme-popover');
+  const el = document.getElementById('theme-swatches');
   if (!el) return;
   const mode = document.body.classList.contains('dark') ? 'dark' : 'light';
   el.innerHTML = Object.entries(THEMES).map(([key, theme]) => {
@@ -895,26 +903,26 @@ function renderThemePicker() {
   }).join('');
 }
 
-function toggleThemePicker(e) {
+function closeSettingsMenu() {
+  const m = document.getElementById('settings-menu');
+  const b = document.getElementById('settings-btn');
+  if (m) m.classList.remove('open');
+  if (b) { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); }
+}
+function toggleSettingsMenu(e) {
   e.stopPropagation();
-  const popover = document.getElementById('theme-popover');
-  if (!popover) return;
-  const isOpen = popover.classList.contains('open');
-  if (isOpen) {
-    popover.classList.remove('open');
-    return;
-  }
-  // Position above the palette button using fixed positioning (so it isn't
-  // clipped by the sidebar's overflow:hidden). translateY(-100%) lifts the
-  // popover up by its own height so it sits above the button.
-  const button = e.currentTarget;
-  if (button && button.getBoundingClientRect) {
-    const rect = button.getBoundingClientRect();
-    popover.style.left = rect.left + 'px';
-    popover.style.top = (rect.top - 8) + 'px';
-    popover.style.transform = 'translateY(-100%)';
-  }
-  popover.classList.add('open');
+  const menu = document.getElementById('settings-menu');
+  const btn = document.getElementById('settings-btn');
+  if (!menu || !btn) return;
+  if (menu.classList.contains('open')) { closeSettingsMenu(); return; }
+  // Fixed positioning so the sidebar's overflow:hidden can't clip it; sits above the button.
+  const rect = btn.getBoundingClientRect();
+  menu.style.left = rect.left + 'px';
+  menu.style.top = (rect.top - 8) + 'px';
+  menu.style.transform = 'translateY(-100%)';
+  menu.classList.add('open');
+  btn.classList.add('open');
+  btn.setAttribute('aria-expanded', 'true');
 }
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
@@ -960,15 +968,14 @@ function toggleDark() {
 function updateDarkBtn() {
   const isDark = document.body.classList.contains('dark');
   const btn = document.getElementById('dark-btn');
-  btn.innerHTML = icon(isDark ? 'sun' : 'moon', 13) + ' <span>' + (isDark ? 'Light' : 'Dark') + '</span>';
+  btn.innerHTML = icon(isDark ? 'sun' : 'moon', 14) + ' <span>' + (isDark ? 'Light mode' : 'Dark mode') + '</span>';
 }
 
 // ─── SEARCH ──────────────────────────────────────────────────────────────────
 function openSearchModal() {
   // Close other popovers/menus if they happen to be open
   closeAllWeekMenus();
-  const tp = document.getElementById('theme-popover');
-  if (tp) tp.classList.remove('open');
+  closeSettingsMenu();
 
   const input = document.getElementById('search-input');
   input.value = '';
@@ -1377,8 +1384,7 @@ function closeAllTaskMenus() {
 document.addEventListener('click', () => {
   closeAllWeekMenus();
   closeAllTaskMenus();
-  const tp = document.getElementById('theme-popover');
-  if (tp) tp.classList.remove('open');
+  closeSettingsMenu();
 });
 
 function showEmpty() {
@@ -2671,8 +2677,7 @@ document.addEventListener('keydown', e => {
     closeWeekModal();
     closeTagModal();
     closeSearchModal();
-    const tp = document.getElementById('theme-popover');
-    if (tp) tp.classList.remove('open');
+    closeSettingsMenu();
   }
 });
 document.getElementById('week-modal').addEventListener('keydown', e => {
