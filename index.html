@@ -317,6 +317,7 @@
   .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
   /* "This Week" heading above the full list; same look as the Today header, accent bar. */
   .list-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+  .list-header .progress-text { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; }
   .list-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
   /* Root-level shortlist rows should land in the same horizontal spot as
      root-level main-checklist rows, so the two lists read as one aligned
@@ -570,7 +571,7 @@
     /* App bar uses the theme accent. --on-accent (set in applyTheme) is white in
        light mode and near-black in dark mode, because dark-mode accents are bright. */
     #header { background: var(--accent); border-bottom-color: var(--accent); color: var(--on-accent, #fff); }
-    #header .week-subtitle, #header .progress-text { color: var(--on-accent, #fff); }
+    #header .week-subtitle { color: var(--on-accent, #fff); }
     #header .btn.btn-icon { background: color-mix(in srgb, var(--on-accent, #fff) 16%, transparent); border-color: transparent; color: var(--on-accent, #fff); }
     #header .btn.btn-icon:hover, #header .btn.btn-icon:active { background: color-mix(in srgb, var(--on-accent, #fff) 28%, transparent); }
     .btn { font-size: 14px; min-height: 40px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; }
@@ -751,7 +752,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v44</div>
+  <div class="app-version" title="App version">v45</div>
 </div>
 
 <div id="main">
@@ -760,9 +761,6 @@
     <div class="week-title-area">
       <div class="week-title" id="week-title">Select or create a week</div>
       <div class="week-subtitle" id="week-subtitle"></div>
-    </div>
-    <div class="progress-ring-wrap">
-      <div class="progress-text" id="progress-text"></div>
     </div>
     <div class="header-btns">
       <button class="btn btn-icon" onclick="openSearchModal()" title="Search (Ctrl+K)"><span data-icon="search"></span></button>
@@ -784,7 +782,7 @@
         <span data-icon="plus" data-icon-size="16"></span> Add task
       </button>
     </div>
-    <div class="list-header" id="week-list-header" style="display:none;">This Week</div>
+    <div class="list-header" id="week-list-header" style="display:none;">This Week<span class="progress-text" id="progress-text"></span></div>
     <ul class="checklist" id="checklist" style="display:none;"></ul>
     <button class="add-root-btn" id="add-root-btn" onclick="addRootTask()" style="display:none;">
       <span data-icon="plus" data-icon-size="16"></span> Add task
