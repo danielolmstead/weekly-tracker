@@ -416,6 +416,10 @@
   /* ADD ROOT TASK */
   .add-root-btn { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-radius: var(--radius); border: 1.5px dashed var(--border2); color: var(--text3); background: none; font-size: 13px; font-family: var(--font); cursor: pointer; width: 100%; transition: all 0.2s; margin-top: 8px; }
   .add-root-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  /* The shortlist's own Add task button sits under its rows; with no rows yet it
+     sits straight under the header instead. */
+  .shortlist-add { margin-top: 6px; padding: 7px 8px; }
+  .shortlist-items:empty + .shortlist-add { margin-top: 0; }
 
   /* WEEK MODAL */
   #week-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
@@ -683,7 +687,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v29</div>
+  <div class="app-version" title="App version">v30</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -714,6 +718,9 @@
     <div id="shortlist" class="shortlist" style="display:none;">
       <div class="shortlist-header">Today's Shortlist<button class="btn btn-sm shortlist-newday" onclick="newDay()" title="Clear checked-off tasks and start a fresh shortlist">New day</button></div>
       <ul class="shortlist-items" id="shortlist-items"></ul>
+      <button class="add-root-btn shortlist-add" onclick="addShortlistTask()" title="Add a task to this week's list, already starred for today">
+        <span data-icon="plus" data-icon-size="16"></span> Add task
+      </button>
     </div>
     <ul class="checklist" id="checklist" style="display:none;"></ul>
     <button class="add-root-btn" id="add-root-btn" onclick="addRootTask()" style="display:none;">
@@ -1545,6 +1552,23 @@ function addRootTask() {
   // Focus label
   setTimeout(() => {
     const el = document.querySelector(`[data-id="${t.id}"] .task-label`);
+    if (el) { el.focus(); selectAll(el); }
+  }, 30);
+}
+
+// "Add task" under Today's Shortlist: a new top-level task in the current week's
+// list, already starred, so it shows in both places. It starts empty (the faint
+// "New task" placeholder) and takes the cursor, like the main list's Add task.
+function addShortlistTask() {
+  const w = currentWeek(); if (!w) return;
+  const t = newTask('');
+  t.shortlisted = true;
+  w.tasks.push(t);
+  save();
+  renderChecklist();
+  updateProgress();
+  setTimeout(() => {
+    const el = document.querySelector(`.shortlist-item[data-id="${t.id}"] .shortlist-label`);
     if (el) { el.focus(); selectAll(el); }
   }, 30);
 }
@@ -2615,7 +2639,8 @@ function renderShortlist() {
   const w = currentWeek();
   if (!w) { box.style.display = 'none'; return; }
   const roots = collectShortlistRootsOrdered(w);
-  if (roots.length === 0) { box.style.display = 'none'; return; }
+  // The card stays visible even with nothing starred, so its Add task button
+  // is always there to start the day's list.
   box.style.display = '';
   list.innerHTML = '';
   renderShortlistItems(roots, list, true);
