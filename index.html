@@ -297,7 +297,7 @@
      everywhere. Hidden entirely (display:none via JS) when nothing's starred. */
   .shortlist { margin-bottom: 20px; padding: 14px 18px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
   .shortlist-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-  .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--warning); border-radius: 2px; }
+  .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
   /* "This Week" heading above the full list; same look as the Today header, accent bar. */
   .list-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
   .list-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
@@ -695,7 +695,7 @@
       <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
       <div class="settings-sep"></div>
       <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-      <div class="app-version" title="App version">v35</div>
+      <div class="app-version" title="App version">v36</div>
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
