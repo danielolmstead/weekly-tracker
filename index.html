@@ -97,8 +97,16 @@
   .sidebar-bottom { padding: 12px; border-top: 1px solid var(--border); position: relative; }
   .settings-btn { width: 100%; background: none; border: 1px solid var(--border); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 12px; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .settings-btn:hover, .settings-btn.open { background: var(--surface2); color: var(--text); }
-  .settings-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 6px; display: none; z-index: 100; min-width: 200px; }
+  /* Settings is a centered dialog over a light dim overlay (both live outside the sidebar so the
+     mobile drawer's transform can't affect their fixed positioning). */
+  .settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.15); z-index: 210; }
+  .settings-overlay.open { display: block; }
+  .settings-menu { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 8px; display: none; z-index: 211; }
   .settings-menu.open { display: block; }
+  .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 6px 10px; }
+  .settings-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .settings-close { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: none; border: none; border-radius: 6px; cursor: pointer; color: var(--text2); }
+  .settings-close:hover { background: var(--surface2); color: var(--text); }
   .settings-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 8px 10px; font-size: 12px; background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
   .settings-item:hover { background: var(--surface2); }
   .settings-item svg { color: var(--text2); }
@@ -642,7 +650,10 @@
     .week-menu-item { min-height: 48px; padding: 0 16px; font-size: 16px; border-radius: 0; display: flex; align-items: center; }
     .drive-status { font-size: 12px; }
     .settings-btn svg, .settings-item svg { width: 20px; height: 20px; }
-    .settings-menu { min-width: 280px; padding: 8px; }
+    .settings-menu { width: 360px; }
+    .settings-title { font-size: 16px; }
+    .settings-close { width: 40px; height: 40px; }
+    .settings-close svg { width: 24px; height: 24px; }
     .settings-row-label svg { width: 20px; height: 20px; }
     .settings-item { min-height: 48px; font-size: 16px; padding: 0 12px; }
     .settings-row-label { font-size: 16px; }
@@ -701,35 +712,42 @@
   </div>
   <div class="sidebar-bottom">
     <button class="settings-btn" id="settings-btn" onclick="toggleSettingsMenu(event)" aria-haspopup="true" aria-expanded="false"><span data-icon="settings" data-icon-size="14"></span> Settings</button>
-    <div class="settings-menu" id="settings-menu" role="menu" onclick="event.stopPropagation()">
-      <div class="settings-row">
-        <div class="settings-row-label"><span data-icon="moon" data-icon-size="14"></span> Mode</div>
-        <div class="font-seg" id="dark-seg" role="radiogroup" aria-label="Light or dark mode"></div>
-      </div>
-      <div class="settings-row">
-        <div class="settings-row-label"><span data-icon="palette" data-icon-size="14"></span> Theme color</div>
-        <div class="theme-swatches" id="theme-swatches"></div>
-      </div>
-      <div class="settings-row">
-        <div class="settings-row-label"><span data-icon="type" data-icon-size="14"></span> Font</div>
-        <div class="font-seg" id="font-seg" role="radiogroup" aria-label="Font"></div>
-      </div>
-      <div class="settings-row">
-        <div class="settings-row-label"><span data-icon="menu" data-icon-size="14"></span> Spacing</div>
-        <div class="font-seg" id="density-seg" role="radiogroup" aria-label="Row spacing"></div>
-      </div>
-      <div class="settings-sep"></div>
-      <button class="settings-item" onclick="closeSettingsMenu(); exportData()" title="Export all data to a backup file"><span data-icon="download" data-icon-size="14"></span> Export data</button>
-      <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
-      <div class="settings-sep"></div>
-      <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-      <div class="app-version" title="App version">v40</div>
-    </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
+
+<!-- Settings dialog: a sibling of the sidebar (not inside it) so it centers on the screen. -->
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettingsMenu()"></div>
+<div class="settings-menu" id="settings-menu" role="dialog" aria-modal="true" aria-label="Settings" onclick="event.stopPropagation()">
+  <div class="settings-header">
+    <div class="settings-title">Settings</div>
+    <button class="settings-close" onclick="closeSettingsMenu()" title="Close" aria-label="Close settings"><span data-icon="x" data-icon-size="18"></span></button>
+  </div>
+  <div class="settings-row">
+    <div class="settings-row-label"><span data-icon="moon" data-icon-size="14"></span> Mode</div>
+    <div class="font-seg" id="dark-seg" role="radiogroup" aria-label="Light or dark mode"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-row-label"><span data-icon="palette" data-icon-size="14"></span> Theme color</div>
+    <div class="theme-swatches" id="theme-swatches"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-row-label"><span data-icon="type" data-icon-size="14"></span> Font</div>
+    <div class="font-seg" id="font-seg" role="radiogroup" aria-label="Font"></div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-row-label"><span data-icon="menu" data-icon-size="14"></span> Spacing</div>
+    <div class="font-seg" id="density-seg" role="radiogroup" aria-label="Row spacing"></div>
+  </div>
+  <div class="settings-sep"></div>
+  <button class="settings-item" onclick="closeSettingsMenu(); exportData()" title="Export all data to a backup file"><span data-icon="download" data-icon-size="14"></span> Export data</button>
+  <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
+  <div class="settings-sep"></div>
+  <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
+  <div class="app-version" title="App version">v41</div>
+</div>
 
 <div id="main">
   <div id="header">
@@ -966,22 +984,23 @@ function renderFontPicker() {
 
 function closeSettingsMenu() {
   const m = document.getElementById('settings-menu');
+  const o = document.getElementById('settings-overlay');
   const b = document.getElementById('settings-btn');
   if (m) m.classList.remove('open');
+  if (o) o.classList.remove('open');
   if (b) { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); }
 }
 function toggleSettingsMenu(e) {
   e.stopPropagation();
   const menu = document.getElementById('settings-menu');
+  const overlay = document.getElementById('settings-overlay');
   const btn = document.getElementById('settings-btn');
   if (!menu || !btn) return;
   if (menu.classList.contains('open')) { closeSettingsMenu(); return; }
-  // Fixed positioning so the sidebar's overflow:hidden can't clip it; sits above the button.
-  const rect = btn.getBoundingClientRect();
-  menu.style.left = rect.left + 'px';
-  menu.style.top = (rect.top - 8) + 'px';
-  menu.style.transform = 'translateY(-100%)';
+  // Settings is a centered dialog (CSS) over a dim overlay. On phones, close the slide-out drawer first.
+  closeSidebarMobile();
   menu.classList.add('open');
+  if (overlay) overlay.classList.add('open');
   btn.classList.add('open');
   btn.setAttribute('aria-expanded', 'true');
 }
