@@ -109,6 +109,11 @@
   .font-seg { display: flex; padding: 3px; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); }
   .font-seg button { flex: 1; border: none; background: none; color: var(--text2); font-size: 13px; padding: 6px 4px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
   .font-seg button:hover { color: var(--text); }
+  /* Row density: Compact is the base; Comfy adds 4px per row (set on <html data-density>). */
+  @media (min-width: 769px) {
+    html[data-density="comfy"] .task-row { padding-top: 8px; padding-bottom: 8px; }
+    html[data-density="comfy"] .shortlist-item-row { padding-top: 7px; padding-bottom: 7px; min-height: 34px; }
+  }
   .font-seg button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .settings-sep { height: 1px; background: var(--border); margin: 4px 0; }
   .app-version { padding: 6px 10px 4px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); }
@@ -644,6 +649,7 @@
     .theme-swatches { gap: 8px; }
     .theme-swatch { width: 28px; height: 28px; }
     .font-seg button { min-height: 40px; font-size: 16px; }
+    html[data-density="comfy"] .task-row, html[data-density="comfy"] .shortlist-item-row { min-height: 44px; }
     .app-version { font-size: 12px; }
 
     /* Dialogs */
@@ -705,12 +711,16 @@
         <div class="settings-row-label"><span data-icon="type" data-icon-size="14"></span> Font</div>
         <div class="font-seg" id="font-seg" role="radiogroup" aria-label="Font"></div>
       </div>
+      <div class="settings-row">
+        <div class="settings-row-label"><span data-icon="menu" data-icon-size="14"></span> Spacing</div>
+        <div class="font-seg" id="density-seg" role="radiogroup" aria-label="Row spacing"></div>
+      </div>
       <div class="settings-sep"></div>
       <button class="settings-item" onclick="closeSettingsMenu(); exportData()" title="Export all data to a backup file"><span data-icon="download" data-icon-size="14"></span> Export data</button>
       <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
       <div class="settings-sep"></div>
       <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-      <div class="app-version" title="App version">v38</div>
+      <div class="app-version" title="App version">v39</div>
     </div>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
@@ -993,10 +1003,32 @@ function load() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 load();
+// ─── DENSITY ─────────────────────────────────────────────────────────────────
+// Compact (original spacing) or Comfy (+4px per row). Stored in localStorage `wt_density`; default Comfy.
+const DENSITIES = { compact: 'Compact', comfy: 'Comfy' };
+let currentDensity = localStorage.getItem('wt_density') || 'comfy';
+if (!DENSITIES[currentDensity]) currentDensity = 'comfy';
+function applyDensity(key) {
+  if (!DENSITIES[key]) key = 'comfy';
+  currentDensity = key;
+  document.documentElement.setAttribute('data-density', key);
+  try { localStorage.setItem('wt_density', key); } catch (e) {}
+  renderDensityPicker();
+}
+function renderDensityPicker() {
+  const el = document.getElementById('density-seg');
+  if (!el) return;
+  el.innerHTML = Object.entries(DENSITIES).map(([key, label]) =>
+    `<button class="${key === currentDensity ? 'active' : ''}" role="radio" aria-checked="${key === currentDensity}"
+      onclick="applyDensity('${key}'); event.stopPropagation();">${label}</button>`
+  ).join('');
+}
+
 if (localStorage.getItem('wt_dark') === '1') document.body.classList.add('dark');
 hydrateStaticIcons();
 applyTheme(currentTheme);
 applyFont(currentFont);
+applyDensity(currentDensity);
 updateDarkBtn();
 renderSidebar();
 if (state.currentWeekId) {
