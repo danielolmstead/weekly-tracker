@@ -650,6 +650,11 @@
     .week-menu-item { min-height: 48px; padding: 0 16px; font-size: 16px; border-radius: 0; display: flex; align-items: center; }
     .drive-status { font-size: 12px; }
     .settings-btn svg, .settings-item svg { width: 20px; height: 20px; }
+    /* Settings button: icon-only, pinned to the top-right of the drawer (#sidebar is position: fixed,
+       so it is the containing block). The empty footer row collapses away. */
+    .sidebar-bottom { position: static; padding: 0; border-top: none; }
+    .settings-btn { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; min-height: 40px; padding: 0; border: none; border-radius: 50%; z-index: 1; }
+    .settings-btn-label { display: none; }
     .settings-menu { width: 360px; }
     .settings-title { font-size: 16px; }
     .settings-close { width: 40px; height: 40px; }
@@ -711,7 +716,7 @@
     <div class="drive-status" id="drive-status"></div>
   </div>
   <div class="sidebar-bottom">
-    <button class="settings-btn" id="settings-btn" onclick="toggleSettingsMenu(event)" aria-haspopup="true" aria-expanded="false"><span data-icon="settings" data-icon-size="14"></span> Settings</button>
+    <button class="settings-btn" id="settings-btn" aria-label="Settings" title="Settings" onclick="toggleSettingsMenu(event)" aria-haspopup="true" aria-expanded="false"><span data-icon="settings" data-icon-size="14"></span><span class="settings-btn-label"> Settings</span></button>
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
 </nav>
