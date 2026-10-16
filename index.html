@@ -691,7 +691,7 @@
     <input type="file" id="import-input" accept=".json,application/json" style="display:none;" onchange="importData(event)">
   </div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v31</div>
+  <div class="app-version" title="App version">v32</div>
 </nav>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
@@ -1473,6 +1473,9 @@ function copyUncompletedTasks(tasks) {
       note: t.note || '',
       tags: t.tags ? t.tags.slice() : [],
       due: '',
+      // Carried-over parents arrive minimized (collapsed) so a new week opens
+      // as a short list; expand any of them to see its subtasks.
+      collapsed: newChildren.length > 0,
       children: newChildren
     });
   });
