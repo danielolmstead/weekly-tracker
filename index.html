@@ -751,7 +751,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v44</div>
+  <div class="app-version" title="App version">v45</div>
 </div>
 
 <div id="main">
@@ -1330,7 +1330,7 @@ function defaultLabelFromDate(d) {
 
 // The date range under the week title. Stored as e.g. "October 6 – October 12, 2026";
 // on mobile (see the media query) the months are shown abbreviated instead
-// ("Oct 6 – Oct 12, 2026"), so both versions are rendered and CSS picks one.
+// ("Oct 6 – Oct 12"), so both versions are rendered and CSS picks one.
 function setWeekSubtitle(range) {
   const el = document.getElementById('week-subtitle');
   el.textContent = '';
@@ -1340,7 +1340,9 @@ function setWeekSubtitle(range) {
   long.textContent = range;
   const short = document.createElement('span');
   short.className = 'sub-short';
-  short.textContent = range.replace(/\b(January|February|March|April|June|July|August|September|October|November|December)\b/g, m => m.slice(0, 3));
+  short.textContent = range
+    .replace(/\b(January|February|March|April|June|July|August|September|October|November|December)\b/g, m => m.slice(0, 3))
+    .replace(/,? \d{4}\b/g, ''); // mobile drops the year so the range fits on one line
   el.appendChild(long);
   el.appendChild(short);
 }
