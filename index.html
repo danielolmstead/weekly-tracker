@@ -152,6 +152,7 @@
   .week-subtitle .sub-short { display: none; }
   .progress-ring-wrap { display: flex; align-items: center; gap: 10px; }
   .progress-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+  .progress-text .prog-short { display: none; }
   .header-btns { display: flex; gap: 8px; }
   .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
   .btn.btn-icon { padding: 8px 10px; }
@@ -546,6 +547,8 @@
     .week-title { display: none; }
     .week-subtitle .sub-long { display: none; }
     .week-subtitle .sub-short { display: inline; }
+    .progress-text .prog-long { display: none; }
+    .progress-text .prog-short { display: inline; }
     #content { padding: 16px; }
     /* New Week dialog: tighter padding and slightly smaller fields so the
        label and the two date fields fit inside a narrow screen. */
@@ -751,7 +754,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v45</div>
+  <div class="app-version" title="App version">v46</div>
 </div>
 
 <div id="main">
@@ -1342,7 +1345,8 @@ function setWeekSubtitle(range) {
   short.className = 'sub-short';
   short.textContent = range
     .replace(/\b(January|February|March|April|June|July|August|September|October|November|December)\b/g, m => m.slice(0, 3))
-    .replace(/,? \d{4}\b/g, ''); // mobile drops the year so the range fits on one line
+    .replace(/,? \d{4}\b/g, '') // mobile drops the year so the range fits on one line
+    .replace(/ – /g, '–'); // ...and the spaces around the dash
   el.appendChild(long);
   el.appendChild(short);
 }
@@ -1710,7 +1714,18 @@ function updateProgress() {
   if (!w) return;
   const total = countAll(w.tasks);
   const done = countDone(w.tasks);
-  document.getElementById('progress-text').textContent = total ? `${done} / ${total} done` : '';
+  // Desktop shows "3 / 8 done"; on mobile (see the media query) the spaces around the slash are dropped.
+  const prog = document.getElementById('progress-text');
+  prog.textContent = '';
+  if (total) {
+    const long = document.createElement('span');
+    long.className = 'prog-long';
+    long.textContent = `${done} / ${total} done`;
+    const short = document.createElement('span');
+    short.className = 'prog-short';
+    short.textContent = `${done}/${total} done`;
+    prog.append(long, short);
+  }
   renderSidebar();
 }
 
