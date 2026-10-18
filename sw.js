@@ -1,6 +1,6 @@
 // This Week service worker
 // Bump CACHE_NAME any time you deploy a change so clients pick up the new files.
-const CACHE_NAME = 'this-week-v48';
+const CACHE_NAME = 'this-week-v49';
 
 const APP_SHELL = [
   './',
@@ -16,7 +16,10 @@ const APP_SHELL = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
+      // cache: 'reload' skips the browser's HTTP cache. A plain addAll() can pull a
+      // stale index.html out of it (GitHub Pages caches ~10 min), leaving the new
+      // cache name holding the OLD page, so the app reports an update but never changes.
+      .then((cache) => Promise.all(APP_SHELL.map((url) => cache.add(new Request(url, { cache: 'reload' })))))
       .then(() => self.skipWaiting())
   );
 });
