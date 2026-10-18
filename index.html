@@ -152,7 +152,8 @@
   .week-subtitle .sub-short { display: none; }
   .progress-ring-wrap { display: flex; align-items: center; gap: 10px; }
   .progress-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
-  .progress-text .prog-short { display: none; }
+  /* Done count that sits at the right of the "This Week" list header; mobile only (the app bar has no room). */
+  .list-progress { display: none; margin-left: auto; font-family: var(--mono); font-size: 14px; font-weight: 400; letter-spacing: 0; text-transform: none; }
   .header-btns { display: flex; gap: 8px; }
   .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
   .btn.btn-icon { padding: 8px 10px; }
@@ -547,8 +548,10 @@
     .week-title { display: none; }
     .week-subtitle .sub-long { display: none; }
     .week-subtitle .sub-short { display: inline; }
-    .progress-text .prog-long { display: none; }
-    .progress-text .prog-short { display: inline; }
+    /* Done count moves out of the app bar to the right of the "This Week" header; the date is centered. */
+    .progress-ring-wrap { display: none; }
+    .list-progress { display: inline; }
+    .week-title-area { text-align: center; }
     #content { padding: 16px; }
     /* New Week dialog: tighter padding and slightly smaller fields so the
        label and the two date fields fit inside a narrow screen. */
@@ -581,7 +584,7 @@
     .btn.btn-icon svg { width: 24px; height: 24px; }
     .btn-sm { font-size: 14px; min-height: 40px; padding: 0 16px; }
     .progress-text { font-size: 14px; }
-    .week-subtitle { font-size: 14px; }
+    .week-subtitle { font-size: 17px; font-weight: 600; }
 
     /* Task rows */
     .task-item { margin-bottom: 0; }
@@ -754,7 +757,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v47</div>
+  <div class="app-version" title="App version">v48</div>
 </div>
 
 <div id="main">
@@ -787,7 +790,7 @@
         <span data-icon="plus" data-icon-size="16"></span> Add task
       </button>
     </div>
-    <div class="list-header" id="week-list-header" style="display:none;">This Week</div>
+    <div class="list-header" id="week-list-header" style="display:none;">This Week<span class="list-progress" id="list-progress"></span></div>
     <ul class="checklist" id="checklist" style="display:none;"></ul>
     <button class="add-root-btn" id="add-root-btn" onclick="addRootTask()" style="display:none;">
       <span data-icon="plus" data-icon-size="16"></span> Add task
@@ -1714,18 +1717,10 @@ function updateProgress() {
   if (!w) return;
   const total = countAll(w.tasks);
   const done = countDone(w.tasks);
-  // Desktop shows "3 / 8 done"; on mobile (see the media query) the spaces around the slash are dropped.
-  const prog = document.getElementById('progress-text');
-  prog.textContent = '';
-  if (total) {
-    const long = document.createElement('span');
-    long.className = 'prog-long';
-    long.textContent = `${done} / ${total} done`;
-    const short = document.createElement('span');
-    short.className = 'prog-short';
-    short.textContent = `${done}/${total} done`;
-    prog.append(long, short);
-  }
+  // App bar (desktop) shows "3 / 8 done"; on mobile that bar is hidden and the
+  // "This Week" list header shows the tighter "3/8 done" instead (see media query).
+  document.getElementById('progress-text').textContent = total ? `${done} / ${total} done` : '';
+  document.getElementById('list-progress').textContent = total ? `${done}/${total} done` : '';
   renderSidebar();
 }
 
