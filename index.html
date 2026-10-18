@@ -150,10 +150,9 @@
   .week-title { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
   .week-subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
   .week-subtitle .sub-short { display: none; }
-  .progress-ring-wrap { display: flex; align-items: center; gap: 10px; }
-  .progress-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
-  /* Done count that sits at the right of the "This Week" list header; mobile only (the app bar has no room). */
-  .list-progress { display: none; margin-left: auto; font-family: var(--mono); font-size: 14px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+  /* Done count at the right end of the "This Week" list header. Desktop shows "3 / 8 done", mobile the tighter "3/8 done". */
+  .list-progress { margin-left: auto; font-family: var(--mono); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .list-progress .prog-short { display: none; }
   .header-btns { display: flex; gap: 8px; }
   .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
   .btn.btn-icon { padding: 8px 10px; }
@@ -548,9 +547,10 @@
     .week-title { display: none; }
     .week-subtitle .sub-long { display: none; }
     .week-subtitle .sub-short { display: inline; }
-    /* Done count moves out of the app bar to the right of the "This Week" header; the date is centered. */
-    .progress-ring-wrap { display: none; }
-    .list-progress { display: inline; }
+    /* Mobile: the date is centered and the done count uses the tighter format. */
+    .list-progress { font-size: 14px; }
+    .list-progress .prog-long { display: none; }
+    .list-progress .prog-short { display: inline; }
     .week-title-area { text-align: center; }
     #content { padding: 16px; }
     /* New Week dialog: tighter padding and slightly smaller fields so the
@@ -576,14 +576,13 @@
     /* App bar uses the theme accent. --on-accent (set in applyTheme) is white in
        light mode and near-black in dark mode, because dark-mode accents are bright. */
     #header { background: var(--accent); border-bottom-color: var(--accent); color: var(--on-accent, #fff); }
-    #header .week-subtitle, #header .progress-text { color: var(--on-accent, #fff); }
+    #header .week-subtitle { color: var(--on-accent, #fff); }
     #header .btn.btn-icon { background: color-mix(in srgb, var(--on-accent, #fff) 16%, transparent); border-color: transparent; color: var(--on-accent, #fff); }
     #header .btn.btn-icon:hover, #header .btn.btn-icon:active { background: color-mix(in srgb, var(--on-accent, #fff) 28%, transparent); }
     .btn { font-size: 14px; min-height: 40px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; }
     .btn.btn-icon { width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 12px; }
     .btn.btn-icon svg { width: 24px; height: 24px; }
     .btn-sm { font-size: 14px; min-height: 40px; padding: 0 16px; }
-    .progress-text { font-size: 14px; }
     .week-subtitle { font-size: 17px; font-weight: 600; }
 
     /* Task rows */
@@ -757,7 +756,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v49</div>
+  <div class="app-version" title="App version">v50</div>
 </div>
 
 <div id="main">
@@ -766,9 +765,6 @@
     <div class="week-title-area">
       <div class="week-title" id="week-title">Select or create a week</div>
       <div class="week-subtitle" id="week-subtitle"></div>
-    </div>
-    <div class="progress-ring-wrap">
-      <div class="progress-text" id="progress-text"></div>
     </div>
     <div class="header-btns">
       <button class="btn btn-icon" onclick="openSearchModal()" title="Search (Ctrl+K)"><span data-icon="search"></span></button>
@@ -1516,7 +1512,6 @@ function showEmpty() {
   document.getElementById('add-root-btn').style.display = 'none';
   document.getElementById('week-title').textContent = 'Select or create a week';
   setWeekSubtitle('');
-  document.getElementById('progress-text').textContent = '';
 }
 
 function selectWeek(id, doSave = true) {
@@ -1717,10 +1712,18 @@ function updateProgress() {
   if (!w) return;
   const total = countAll(w.tasks);
   const done = countDone(w.tasks);
-  // App bar (desktop) shows "3 / 8 done"; on mobile that bar is hidden and the
-  // "This Week" list header shows the tighter "3/8 done" instead (see media query).
-  document.getElementById('progress-text').textContent = total ? `${done} / ${total} done` : '';
-  document.getElementById('list-progress').textContent = total ? `${done}/${total} done` : '';
+  // Done count lives in the "This Week" list header: "3 / 8 done" on desktop, "3/8 done" on mobile (see CSS).
+  const prog = document.getElementById('list-progress');
+  prog.textContent = '';
+  if (total) {
+    const long = document.createElement('span');
+    long.className = 'prog-long';
+    long.textContent = `${done} / ${total} done`;
+    const short = document.createElement('span');
+    short.className = 'prog-short';
+    short.textContent = `${done}/${total} done`;
+    prog.append(long, short);
+  }
   renderSidebar();
 }
 

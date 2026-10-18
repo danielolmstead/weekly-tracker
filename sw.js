@@ -1,6 +1,6 @@
 // This Week service worker
 // Bump CACHE_NAME any time you deploy a change so clients pick up the new files.
-const CACHE_NAME = 'this-week-v49';
+const CACHE_NAME = 'this-week-v50';
 
 const APP_SHELL = [
   './',
