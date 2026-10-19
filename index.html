@@ -75,6 +75,12 @@
     display: flex; flex-direction: column; overflow: hidden;
   }
   .sidebar-top { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+  /* Desktop: sidebar header and main header share one height so their bottom borders line up. */
+  @media (min-width: 769px) {
+    :root { --top-h: calc(96px * max(1, var(--fs, 1))); }
+    .sidebar-top, #header { box-sizing: border-box; min-height: var(--top-h); }
+    #header { align-content: center; }
+  }
   .app-name { font-size: calc(13px * var(--fs, 1)); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); font-family: var(--mono); }
   .sidebar-actions { display: flex; gap: 6px; margin-top: 12px; }
   .sidebar-actions button { flex: 1; font-size: calc(12px * var(--fs, 1)); padding: 6px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
@@ -799,7 +805,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v61</div>
+  <div class="app-version" title="App version">v62</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
