@@ -122,7 +122,11 @@
     html[data-density="comfy"] .task-row { padding-top: 8px; padding-bottom: 8px; }
     html[data-density="comfy"] .shortlist-item-row { padding-top: 7px; padding-bottom: 7px; min-height: 34px; }
   }
-  .density-preview { margin-top: 10px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); pointer-events: none; user-select: none; }
+  .density-example-label { margin-top: 12px; font-size: 12px; color: var(--text2); }
+  .density-preview { margin-top: 2px; pointer-events: none; user-select: none; }
+  /* Text is stood in for by chunky bars. Each bar sits inside a normal label line box, so row heights match the real list. */
+  .density-preview .bar { display: inline-block; height: 9px; border-radius: 5px; background: var(--border2); vertical-align: middle; }
+  .density-preview .bar.done { opacity: 0.5; }
   .density-preview .drag-handle { opacity: 0; width: 18px; box-sizing: border-box; } /* empty here: reserve the real icon+padding width so the indent line sits under the parent checkbox */
   .font-seg button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .settings-sep { height: 1px; background: var(--border); margin: 4px 0; }
@@ -760,12 +764,13 @@
     <div class="settings-row-label"><span data-icon="menu" data-icon-size="14"></span> Spacing</div>
     <div class="font-seg" id="density-seg" role="radiogroup" aria-label="Row spacing"></div>
     <!-- Live preview: uses the real row classes, so it follows html[data-density] like the actual list. -->
+    <div class="density-example-label">Example:</div>
     <div class="density-preview" aria-hidden="true">
       <ul class="checklist">
-        <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox partial"></div><div class="task-label-wrap"><div class="task-label">Plan weekend trip</div></div></div></li>
+        <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox partial"></div><div class="task-label-wrap"><div class="task-label"><span class="bar" style="width:120px"></span></div></div></div></li>
         <ul class="subtask-list">
-          <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox checked"></div><div class="task-label-wrap"><div class="task-label" data-done="true">Book campsite</div></div></div></li>
-          <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox"></div><div class="task-label-wrap"><div class="task-label">Pack the cooler</div></div></div></li>
+          <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox checked"></div><div class="task-label-wrap"><div class="task-label"><span class="bar done" style="width:84px"></span></div></div></div></li>
+          <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox"></div><div class="task-label-wrap"><div class="task-label"><span class="bar" style="width:100px"></span></div></div></div></li>
         </ul>
       </ul>
     </div>
@@ -775,7 +780,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v52</div>
+  <div class="app-version" title="App version">v53</div>
 </div>
 
 <div id="main">
