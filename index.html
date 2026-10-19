@@ -461,6 +461,11 @@
   .carry-over-row input[type="checkbox"] { width: auto; margin: 0; padding: 0; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
   .carry-over-row strong { color: var(--text); font-weight: 600; }
   .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  /* Close (x) button in the top-right corner of every dialog, in place of a Cancel button. */
+  .week-modal-box, .tag-modal-box, .drive-modal-box { position: relative; }
+  .modal-x { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: none; border: none; border-radius: 6px; cursor: pointer; color: var(--text2); }
+  .modal-x:hover { background: var(--surface2); color: var(--text); }
+  .week-modal-box h2, .tag-modal-box h3, .drive-modal-box h3 { padding-right: 28px; }
 
   /* SEARCH MODAL */
   #search-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 250; align-items: flex-start; justify-content: center; padding: 80px 24px 24px; }
@@ -685,6 +690,8 @@
     .tag-suggestion { font-size: 14px; min-height: 32px; padding: 0 14px; }
     .drive-modal-box p { font-size: 16px; }
     .modal-btns { gap: 8px; }
+    .modal-x { width: 40px; height: 40px; }
+    .modal-x svg { width: 24px; height: 24px; }
 
     /* Search */
     #search-modal { padding: 64px 16px 16px; }
@@ -756,7 +763,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v50</div>
+  <div class="app-version" title="App version">v51</div>
 </div>
 
 <div id="main">
@@ -797,6 +804,7 @@
 <!-- NEW WEEK MODAL -->
 <div id="week-modal">
   <div class="week-modal-box">
+    <button class="modal-x" onclick="closeWeekModal()" title="Close" aria-label="Close"><span data-icon="x" data-icon-size="18"></span></button>
     <h2 id="week-modal-title">New Week</h2>
     <label>Week label (e.g. "Week of May 26")</label>
     <input type="text" id="week-label-input" placeholder="Week of May 26" />
@@ -811,7 +819,6 @@
       <span>Carry over uncompleted tasks from <strong id="carry-over-source"></strong></span>
     </label>
     <div class="modal-btns">
-      <button class="btn" onclick="closeWeekModal()">Cancel</button>
       <button class="btn btn-accent" id="week-modal-save-btn" onclick="saveWeekModal()">Create</button>
     </div>
   </div>
@@ -834,11 +841,11 @@
 <!-- TAG MODAL -->
 <div id="tag-modal">
   <div class="tag-modal-box">
+    <button class="modal-x" onclick="closeTagModal()" title="Close" aria-label="Close"><span data-icon="x" data-icon-size="18"></span></button>
     <h3>Add tag</h3>
     <input type="text" id="tag-input" placeholder="Type a tag..." onkeydown="if(event.key==='Enter')saveTag()" />
     <div class="tag-suggestions" id="tag-suggestions"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button class="btn btn-sm" onclick="closeTagModal()">Cancel</button>
       <button class="btn btn-sm btn-accent" onclick="saveTag()">Add</button>
     </div>
   </div>
@@ -846,6 +853,7 @@
 
 <div id="drive-modal">
   <div class="drive-modal-box">
+    <button class="modal-x" onclick="driveCloseModal()" title="Close" aria-label="Close"><span data-icon="x" data-icon-size="18"></span></button>
     <h3 id="drive-modal-title"></h3>
     <p id="drive-modal-text"></p>
     <div class="modal-btns" id="drive-modal-btns"></div>
@@ -2828,17 +2836,16 @@ function newDay() {
     save();
     renderChecklist();
   };
-  const cancel = { label: 'Cancel', onClick: () => {} };
   const stay = ' They stay in this week\'s list.';
   if (!open.length) {
     driveShowModal('Start a new day?', n(done.length, 'checked-off task') + ' will come off the shortlist.' + stay,
-      [cancel, { label: 'Start new day', accent: true, onClick: () => apply(false) }]);
+      [{ label: 'Start new day', accent: true, onClick: () => apply(false) }]);
   } else if (!done.length) {
     driveShowModal('Start a new day?', n(open.length, 'unchecked task') + ' on the shortlist. Keep them for the new day, or clear them from the shortlist?' + stay,
-      [cancel, { label: 'Clear them', onClick: () => apply(true) }, { label: 'Keep them', accent: true, onClick: () => apply(false) }]);
+      [{ label: 'Clear them', onClick: () => apply(true) }, { label: 'Keep them', accent: true, onClick: () => apply(false) }]);
   } else {
-    driveShowModal('Start a new day?', n(done.length, 'checked-off task') + ' will come off the shortlist. What about the ' + n(open.length, 'unchecked task') + '? Cleared ones come off the shortlist too. Nothing is deleted; every task stays in this week\'s list.',
-      [cancel, { label: 'Clear them', onClick: () => apply(true) }, { label: 'Keep unchecked', accent: true, onClick: () => apply(false) }]);
+    driveShowModal('It\'s a new day!', 'Which would you like to do?',
+      [{ label: 'Clear all tasks', onClick: () => apply(true) }, { label: 'Clear checked-off tasks', accent: true, onClick: () => apply(false) }]);
   }
 }
 
