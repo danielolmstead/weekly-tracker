@@ -483,7 +483,7 @@
   .week-modal-box label { font-size: calc(12px * var(--fs, 1)); color: var(--text2); display: block; margin-bottom: 4px; }
   .week-modal-box input { width: 100%; padding: 8px 10px; font-size: calc(14px * var(--fs, 1)); font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 12px; }
   .week-modal-box input:focus { border-color: var(--accent); }
-  .carry-over-row { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; user-select: none; font-size: calc(12.5px * var(--fs, 1)); color: var(--text); }
+  .week-modal-box .carry-over-row { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; user-select: none; font-size: calc(12.5px * var(--fs, 1)); color: var(--text); }
   .carry-over-row:hover { border-color: var(--accent); }
   .carry-over-row input[type="checkbox"] { width: auto; margin: 0; padding: 0; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
   .carry-over-row strong { color: var(--text); font-weight: 600; }
@@ -591,7 +591,7 @@
     .week-modal-box h2 { margin-bottom: 12px; }
     .week-modal-box input { padding: 6px 8px; font-size: calc(13px * var(--fs, 1)); margin-bottom: 10px; }
     .week-modal-box input[type="date"] { padding: 6px 4px; font-size: calc(12.5px * var(--fs, 1)); }
-    .carry-over-row { padding: 8px 10px; font-size: calc(12px * var(--fs, 1)); }
+    .week-modal-box .carry-over-row { padding: 8px 10px; font-size: calc(12px * var(--fs, 1)); }
     /* No hover on touch: hide the hover-controls; the keyboard action bar replaces them. */
     .task-controls { display: none; }
 
@@ -710,7 +710,7 @@
     .week-modal-box input[type="date"] { font-size: calc(16px * var(--fs, 1)); padding: 12px 8px; }
     /* The two date fields share one row; at Large they would clip the year on 360px phones, so they stay at 16px. */
     html[data-fontsize="lg"] .week-modal-box input[type="date"] { font-size: 16px; }
-    .carry-over-row { font-size: calc(14px * var(--fs, 1)); padding: 12px; min-height: 48px; }
+    .week-modal-box .carry-over-row { font-size: calc(14px * var(--fs, 1)); padding: 12px; min-height: 48px; }
     .carry-over-row input[type="checkbox"] { width: 20px; height: 20px; }
     .tag-modal-box { width: calc(100% - 32px); max-width: 360px; }
     .tag-modal-box input { font-size: calc(16px * var(--fs, 1)); padding: 12px; min-height: 48px; }
@@ -805,7 +805,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v62</div>
+  <div class="app-version" title="App version">v64</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -870,7 +870,7 @@
     </div>
     <label id="carry-over-row" class="carry-over-row" style="display:none;">
       <input type="checkbox" id="carry-over-checkbox" />
-      <span>Carry over uncompleted tasks from <strong id="carry-over-source"></strong></span>
+      <span>Carry over uncompleted tasks</span>
     </label>
     <div class="modal-btns">
       <button class="btn btn-accent" id="week-modal-save-btn" onclick="saveWeekModal()">Create</button>
@@ -1474,9 +1474,8 @@ function openNewWeekModal() {
   // Show carry-over option only when there's a previous week to copy from
   const carryRow = document.getElementById('carry-over-row');
   const carryCheckbox = document.getElementById('carry-over-checkbox');
-  carryCheckbox.checked = false; // always start unchecked
+  carryCheckbox.checked = true; // checked by default
   if (state.weeks.length > 0) {
-    document.getElementById('carry-over-source').textContent = state.weeks[0].label;
     carryRow.style.display = 'flex';
   } else {
     carryRow.style.display = 'none';
