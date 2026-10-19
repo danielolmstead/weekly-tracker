@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>This Week</title>
+<script>try{var _fs=localStorage.getItem("wt_fontsize");if(_fs==="sm"||_fs==="lg")document.documentElement.setAttribute("data-fontsize",_fs);}catch(e){}</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2d6a4f" id="theme-meta">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -65,7 +66,7 @@
     --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; font-size: 14px; transition: background 0.2s, color 0.2s; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; font-size: calc(14px * var(--fs, 1)); transition: background 0.2s, color 0.2s; }
 
   /* SIDEBAR */
   #sidebar {
@@ -74,28 +75,28 @@
     display: flex; flex-direction: column; overflow: hidden;
   }
   .sidebar-top { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
-  .app-name { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); font-family: var(--mono); }
+  .app-name { font-size: calc(13px * var(--fs, 1)); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); font-family: var(--mono); }
   .sidebar-actions { display: flex; gap: 6px; margin-top: 12px; }
-  .sidebar-actions button { flex: 1; font-size: 12px; padding: 6px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+  .sidebar-actions button { flex: 1; font-size: calc(12px * var(--fs, 1)); padding: 6px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
   .sidebar-actions button:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
   .weeks-list { flex: 1; overflow-y: auto; padding: 8px; }
   .week-item { padding: 8px 10px; border-radius: var(--radius); cursor: pointer; margin-bottom: 2px; transition: all 0.15s; display: flex; align-items: center; justify-content: space-between; gap: 6px; position: relative; }
   .week-item:hover { background: var(--surface2); }
   .week-item.active { background: var(--accent-bg); color: var(--accent); }
-  .week-item-label { font-size: 12px; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .week-item-count { font-size: 10px; color: var(--text3); font-family: var(--mono); flex-shrink: 0; }
+  .week-item-label { font-size: calc(12px * var(--fs, 1)); font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .week-item-count { font-size: calc(10px * var(--fs, 1)); color: var(--text3); font-family: var(--mono); flex-shrink: 0; }
   .week-item.active .week-item-count { color: var(--accent); opacity: 0.7; }
   .week-item-menu-btn { background: none; border: none; padding: 3px 5px; border-radius: 4px; cursor: pointer; color: var(--text3); line-height: 1; opacity: 0; transition: opacity 0.15s, background 0.15s; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
   .week-item:hover .week-item-menu-btn { opacity: 1; }
   .week-item-menu-btn:hover { background: var(--border); color: var(--text); }
   .week-menu-popover { position: absolute; top: 100%; right: 8px; margin-top: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); min-width: 110px; z-index: 50; padding: 4px; display: none; }
   .week-menu-popover.open { display: block; }
-  .week-menu-item { display: block; width: 100%; text-align: left; padding: 6px 10px; font-size: 12px; background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
+  .week-menu-item { display: block; width: 100%; text-align: left; padding: 6px 10px; font-size: calc(12px * var(--fs, 1)); background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
   .week-menu-item:hover { background: var(--surface2); }
   .week-menu-item.danger { color: var(--danger); }
   .week-menu-item.danger:hover { background: var(--danger-bg); }
   .sidebar-bottom { padding: 12px; border-top: 1px solid var(--border); position: relative; }
-  .settings-btn { width: 100%; background: none; border: 1px solid var(--border); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 12px; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .settings-btn { width: 100%; background: none; border: 1px solid var(--border); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: calc(12px * var(--fs, 1)); font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .settings-btn:hover, .settings-btn.open { background: var(--surface2); color: var(--text); }
   /* Settings is a centered dialog over a light dim overlay (both live outside the sidebar so the
      mobile drawer's transform can't affect their fixed positioning). */
@@ -104,25 +105,25 @@
   .settings-menu { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 8px; display: none; z-index: 211; }
   .settings-menu.open { display: block; }
   .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 6px 10px; }
-  .settings-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .settings-title { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--text); }
   .settings-close { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: none; border: none; border-radius: 6px; cursor: pointer; color: var(--text2); }
   .settings-close:hover { background: var(--surface2); color: var(--text); }
-  .settings-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 8px 10px; font-size: 12px; background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
+  .settings-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 8px 10px; font-size: calc(12px * var(--fs, 1)); background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
   .settings-item:hover { background: var(--surface2); }
   .settings-item svg { color: var(--text2); }
   .settings-row { padding: 8px 10px; }
-  .settings-row-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); margin-bottom: 8px; }
+  .settings-row-label { display: flex; align-items: center; gap: 8px; font-size: calc(12px * var(--fs, 1)); color: var(--text); margin-bottom: 8px; }
   .settings-row-label svg { color: var(--text2); }
   .theme-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
   .font-seg { display: flex; padding: 3px; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); }
-  .font-seg button { flex: 1; border: none; background: none; color: var(--text2); font-size: 13px; padding: 6px 4px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .font-seg button { flex: 1; border: none; background: none; color: var(--text2); font-size: calc(13px * var(--fs, 1)); padding: 6px 4px; border-radius: 4px; cursor: pointer; transition: background 0.15s, color 0.15s; }
   .font-seg button:hover { color: var(--text); }
   /* Row density: Compact is the base; Comfy adds 4px per row (set on <html data-density>). */
   @media (min-width: 769px) {
     html[data-density="comfy"] .task-row { padding-top: 8px; padding-bottom: 8px; }
     html[data-density="comfy"] .shortlist-item-row { padding-top: 7px; padding-bottom: 7px; min-height: 34px; }
   }
-  .density-example-label { margin-top: 12px; font-size: 12px; color: var(--text2); }
+  .density-example-label { margin-top: 12px; font-size: calc(12px * var(--fs, 1)); color: var(--text2); }
   .density-preview { margin-top: 2px; pointer-events: none; user-select: none; }
   /* Text is stood in for by chunky bars. Each bar sits inside a normal label line box, so row heights match the real list. */
   .density-preview .bar { display: inline-block; height: 9px; border-radius: 5px; background: var(--border2); vertical-align: middle; }
@@ -130,19 +131,32 @@
   .density-preview .drag-handle { opacity: 0; width: 18px; box-sizing: border-box; } /* empty here: reserve the real icon+padding width so the indent line sits under the parent checkbox */
   .font-seg button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .settings-sep { height: 1px; background: var(--border); margin: 4px 0; }
-  .app-version { padding: 6px 10px 4px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); }
+  .app-version { padding: 6px 10px 4px; text-align: center; font-family: var(--mono); font-size: calc(10px * var(--fs, 1)); color: var(--text3); }
+
+  /* Text size (Settings > Text size): every font-size above is calc(Npx * var(--fs)). Medium = 1 = the original sizes. */
+  html { --fs: 1; }
+  html[data-fontsize="sm"] { --fs: 0.875; }
+  html[data-fontsize="lg"] { --fs: 1.15; }
+  /* iOS Safari zooms the page when a field under 16px gets focus, so on iPhones editable text never drops below 16px. */
+  @supports (-webkit-touch-callout: none) {
+    @media (max-width: 768px) {
+      html[data-fontsize="sm"] .task-label, html[data-fontsize="sm"] .subtask-list .task-label, html[data-fontsize="sm"] .shortlist-label,
+      html[data-fontsize="sm"] .task-note, html[data-fontsize="sm"] .week-modal-box input, html[data-fontsize="sm"] .tag-modal-box input,
+      html[data-fontsize="sm"] #search-input { font-size: 16px; }
+    }
+  }
 
   /* DRIVE SYNC */
   .drive-sync-row { padding: 10px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
-  .drive-sync-btn { font-size: 12px; padding: 7px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+  .drive-sync-btn { font-size: calc(12px * var(--fs, 1)); padding: 7px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
   .drive-sync-btn:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
   .drive-sync-btn:disabled { opacity: 0.55; cursor: default; }
   .drive-sync-btn.connected { color: var(--accent); }
-  .drive-status { font-size: 11px; color: var(--text3); text-align: center; min-height: 14px; }
+  .drive-status { font-size: calc(11px * var(--fs, 1)); color: var(--text3); text-align: center; min-height: 14px; }
   .drive-status.error { color: var(--danger); }
   .drive-status.syncing { color: var(--accent); }
   /* Floating "reconnect" chip: the sidebar (with the Drive button) is hidden on phones */
-  .drive-chip { display: none; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 120; align-items: center; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); box-shadow: var(--shadow-md); font-family: var(--font); font-size: 12px; cursor: pointer; white-space: nowrap; max-width: calc(100vw - 24px); }
+  .drive-chip { display: none; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 120; align-items: center; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); box-shadow: var(--shadow-md); font-family: var(--font); font-size: calc(12px * var(--fs, 1)); cursor: pointer; white-space: nowrap; max-width: calc(100vw - 24px); }
   .drive-chip.show { display: inline-flex; }
   .drive-chip:hover, .drive-chip:active { color: var(--accent); border-color: var(--accent); }
   .theme-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; padding: 0; transition: transform 0.15s; outline: 1.5px solid var(--border); outline-offset: -1.5px; }
@@ -153,26 +167,26 @@
   #main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; }
   #header { padding: 24px 32px 20px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   .week-title-area { flex: 1; }
-  .week-title { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
-  .week-subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
+  .week-title { font-size: calc(22px * var(--fs, 1)); font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  .week-subtitle { font-size: calc(12px * var(--fs, 1)); color: var(--text2); margin-top: 2px; font-family: var(--mono); }
   .week-subtitle .sub-short { display: none; }
   /* Done count at the right end of the "This Week" list header. Desktop shows "3 / 8 done", mobile the tighter "3/8 done". */
-  .list-progress { margin-left: auto; font-family: var(--mono); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .list-progress { margin-left: auto; font-family: var(--mono); font-size: calc(12px * var(--fs, 1)); font-weight: 400; letter-spacing: 0; text-transform: none; }
   .list-progress .prog-short { display: none; }
   .header-btns { display: flex; gap: 8px; }
-  .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font); font-size: calc(13px * var(--fs, 1)); font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
   .btn.btn-icon { padding: 8px 10px; }
   .btn:hover { background: var(--border); }
   .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-sm { padding: 5px 10px; font-size: calc(12px * var(--fs, 1)); }
 
   /* CONTENT */
   #content { flex: 1; overflow-y: auto; padding: 24px 32px; max-width: 860px; width: 100%; }
 
   /* EMPTY STATE */
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
-  .empty-state p { font-size: 15px; margin-bottom: 16px; }
+  .empty-state p { font-size: calc(15px * var(--fs, 1)); margin-bottom: 16px; }
 
   /* CHECKLIST */
   .checklist { list-style: none; }
@@ -224,7 +238,7 @@
      cursor:text hints that the empty area is a click-to-focus target for
      the label (see wrapClickToFocus in JS). */
   .task-label-wrap { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; cursor: text; }
-  .task-label { flex: 0 1 auto; font-size: 13.5px; color: var(--text); line-height: 1.4; cursor: text; outline: none; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
+  .task-label { flex: 0 1 auto; font-size: calc(13.5px * var(--fs, 1)); color: var(--text); line-height: 1.4; cursor: text; outline: none; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
   .task-label:focus { background: var(--surface2); }
   .task-label[data-done="true"] { color: var(--text3); text-decoration: line-through; }
   .task-label[contenteditable="true"] { cursor: text; }
@@ -250,7 +264,7 @@
   /* Note editor is a contenteditable div (not a textarea) so it can hold
      inline HTML — specifically, clickable <a> tags for URLs. white-space:
      pre-wrap preserves user-typed newlines without needing <br> insertion. */
-  .task-note { width: 100%; font-size: 12.5px; font-family: var(--font); color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; outline: none; min-height: 36px; line-height: 1.5; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; cursor: text; transition: border 0.15s; }
+  .task-note { width: 100%; font-size: calc(12.5px * var(--fs, 1)); font-family: var(--font); color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; outline: none; min-height: 36px; line-height: 1.5; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; cursor: text; transition: border 0.15s; }
   .task-note:focus { border-color: var(--accent); }
   /* Placeholder shows when the div is truly empty. On blur we normalize the
      contents so this stays reliable — see updateNote(). */
@@ -258,13 +272,13 @@
 
   /* METADATA ROW */
   .task-meta { display: flex; align-items: center; gap: 6px; padding: 2px 8px 2px 60px; flex-wrap: wrap; }
-  .tag-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--tag-bg); color: var(--tag-text); font-size: 11px; padding: 2px 8px; border-radius: 99px; cursor: pointer; }
+  .tag-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--tag-bg); color: var(--tag-text); font-size: calc(11px * var(--fs, 1)); padding: 2px 8px; border-radius: 99px; cursor: pointer; }
   .tag-pill:hover { background: var(--border); }
-  .tag-pill .remove-tag { font-size: 10px; opacity: 0.6; }
-  .due-badge { font-size: 11px; font-family: var(--mono); color: var(--text3); background: var(--surface2); padding: 2px 7px; border-radius: 99px; cursor: pointer; }
+  .tag-pill .remove-tag { font-size: calc(10px * var(--fs, 1)); opacity: 0.6; }
+  .due-badge { font-size: calc(11px * var(--fs, 1)); font-family: var(--mono); color: var(--text3); background: var(--surface2); padding: 2px 7px; border-radius: 99px; cursor: pointer; }
   .due-badge.overdue { color: var(--danger); background: var(--danger-bg); }
   .due-badge.soon { color: var(--warning); background: var(--warning-bg); }
-  .add-tag-btn { font-size: 11px; color: var(--text3); background: none; border: 1px dashed var(--border2); padding: 2px 7px; border-radius: 99px; cursor: pointer; transition: all 0.15s; }
+  .add-tag-btn { font-size: calc(11px * var(--fs, 1)); color: var(--text3); background: none; border: 1px dashed var(--border2); padding: 2px 7px; border-radius: 99px; cursor: pointer; transition: all 0.15s; }
   .add-tag-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   /* NOTE */
@@ -317,10 +331,10 @@
      main checklist. Same underlying tasks; toggling done here toggles them
      everywhere. Hidden entirely (display:none via JS) when nothing's starred. */
   .shortlist { margin-bottom: 20px; padding: 14px 18px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
-  .shortlist-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .shortlist-header { font-size: calc(11px * var(--fs, 1)); font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
   .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
   /* "This Week" heading above the full list; same look as the Today header, accent bar. */
-  .list-header { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+  .list-header { font-size: calc(11px * var(--fs, 1)); font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
   .list-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
   /* Root-level shortlist rows should land in the same horizontal spot as
      root-level main-checklist rows, so the two lists read as one aligned
@@ -381,7 +395,7 @@
   .shortlist-item-row > .drag-handle,
   .shortlist-item-row > .star-toggle,
   .shortlist-item-row > .expand-toggle { margin-top: 1px; }
-  .shortlist-label { flex: 1; font-size: 13.5px; color: var(--text); line-height: 1.4; min-width: 0; word-wrap: break-word; overflow-wrap: anywhere; cursor: text; outline: none; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
+  .shortlist-label { flex: 1; font-size: calc(13.5px * var(--fs, 1)); color: var(--text); line-height: 1.4; min-width: 0; word-wrap: break-word; overflow-wrap: anywhere; cursor: text; outline: none; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
   .shortlist-label:focus { background: var(--surface2); }
   .shortlist-label[data-done="true"] { color: var(--text3); text-decoration: line-through; }
   /* Star inside shortlist items is already the "starred" state — clicking it
@@ -441,11 +455,11 @@
   /* CHILD TASKS */
   .subtask-list { list-style: none; padding-left: 24px; margin-top: 1px; position: relative; transition: background 0.1s; }
   .subtask-list::before { content: ''; position: absolute; left: 42px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
-  .subtask-list .task-label { font-size: 13px; }
+  .subtask-list .task-label { font-size: calc(13px * var(--fs, 1)); }
   .subtask-list .subtask-list { padding-left: 22px; }
 
   /* ADD ROOT TASK */
-  .add-root-btn { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-radius: var(--radius); border: 1.5px dashed var(--border2); color: var(--text3); background: none; font-size: 13px; font-family: var(--font); cursor: pointer; width: 100%; transition: all 0.2s; margin-top: 8px; }
+  .add-root-btn { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-radius: var(--radius); border: 1.5px dashed var(--border2); color: var(--text3); background: none; font-size: calc(13px * var(--fs, 1)); font-family: var(--font); cursor: pointer; width: 100%; transition: all 0.2s; margin-top: 8px; }
   .add-root-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
   /* The shortlist's own Add task button sits under its rows; with no rows yet it
      sits straight under the header instead. */
@@ -459,11 +473,11 @@
   /* Date inputs have a built-in minimum width (wider on iOS Safari); let them
      shrink with the row instead of pushing the dialog past the screen edge. */
   .week-modal-box input[type="date"] { min-width: 0; }
-  .week-modal-box h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-  .week-modal-box label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
-  .week-modal-box input { width: 100%; padding: 8px 10px; font-size: 14px; font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 12px; }
+  .week-modal-box h2 { font-size: calc(16px * var(--fs, 1)); font-weight: 600; margin-bottom: 16px; }
+  .week-modal-box label { font-size: calc(12px * var(--fs, 1)); color: var(--text2); display: block; margin-bottom: 4px; }
+  .week-modal-box input { width: 100%; padding: 8px 10px; font-size: calc(14px * var(--fs, 1)); font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 12px; }
   .week-modal-box input:focus { border-color: var(--accent); }
-  .carry-over-row { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; user-select: none; font-size: 12.5px; color: var(--text); }
+  .carry-over-row { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; user-select: none; font-size: calc(12.5px * var(--fs, 1)); color: var(--text); }
   .carry-over-row:hover { border-color: var(--accent); }
   .carry-over-row input[type="checkbox"] { width: auto; margin: 0; padding: 0; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
   .carry-over-row strong { color: var(--text); font-weight: 600; }
@@ -480,20 +494,20 @@
   .search-modal-box { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); width: 100%; max-width: 640px; max-height: calc(100vh - 120px); display: flex; flex-direction: column; overflow: hidden; }
   .search-input-row { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
   .search-input-icon { color: var(--text3); display: inline-flex; align-items: center; }
-  #search-input { flex: 1; font-size: 15px; font-family: var(--font); border: none; outline: none; background: transparent; color: var(--text); padding: 0; }
+  #search-input { flex: 1; font-size: calc(15px * var(--fs, 1)); font-family: var(--font); border: none; outline: none; background: transparent; color: var(--text); padding: 0; }
   #search-input::placeholder { color: var(--text3); }
   #search-input::-webkit-search-cancel-button { cursor: pointer; }
-  .search-kbd { font-family: var(--mono); font-size: 10.5px; padding: 2px 7px; border: 1px solid var(--border); border-radius: 4px; color: var(--text3); background: var(--surface2); }
+  .search-kbd { font-family: var(--mono); font-size: calc(10.5px * var(--fs, 1)); padding: 2px 7px; border: 1px solid var(--border); border-radius: 4px; color: var(--text3); background: var(--surface2); }
   .search-results { flex: 1; overflow-y: auto; padding: 8px 0 12px; }
-  .search-empty, .search-no-results { padding: 32px 24px; text-align: center; color: var(--text3); font-size: 13px; }
+  .search-empty, .search-no-results { padding: 32px 24px; text-align: center; color: var(--text3); font-size: calc(13px * var(--fs, 1)); }
   .search-week-group { padding: 4px 0 8px; }
-  .search-week-label { padding: 8px 20px 4px; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); font-family: var(--mono); }
+  .search-week-label { padding: 8px 20px 4px; font-size: calc(10.5px * var(--fs, 1)); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); font-family: var(--mono); }
   .search-result-item { padding: 10px 20px; cursor: pointer; transition: background 0.1s, border-color 0.1s; border-left: 3px solid transparent; }
   .search-result-item:hover { background: var(--surface2); border-left-color: var(--accent); }
-  .search-breadcrumb { font-size: 11px; color: var(--text3); margin-bottom: 3px; line-height: 1.4; }
-  .search-task-label { font-size: 13.5px; color: var(--text); line-height: 1.4; }
+  .search-breadcrumb { font-size: calc(11px * var(--fs, 1)); color: var(--text3); margin-bottom: 3px; line-height: 1.4; }
+  .search-task-label { font-size: calc(13.5px * var(--fs, 1)); color: var(--text); line-height: 1.4; }
   .search-task-label.done { text-decoration: line-through; color: var(--text3); }
-  .search-task-note { font-size: 12px; color: var(--text2); margin-top: 4px; font-style: italic; line-height: 1.5; }
+  .search-task-note { font-size: calc(12px * var(--fs, 1)); color: var(--text2); margin-top: 4px; font-style: italic; line-height: 1.5; }
   .search-task-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
   .search-task-tags .tag-pill { pointer-events: none; }
   mark.search-hl { background: var(--accent-bg); color: var(--accent); padding: 1px 3px; border-radius: 3px; font-weight: 600; }
@@ -510,26 +524,26 @@
   #tag-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 300; align-items: center; justify-content: center; }
   #tag-modal.open { display: flex; }
   .tag-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; width: 300px; box-shadow: var(--shadow-md); }
-  .tag-modal-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
-  .tag-modal-box input { width: 100%; padding: 8px 10px; font-size: 14px; font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 10px; }
+  .tag-modal-box h3 { font-size: calc(14px * var(--fs, 1)); font-weight: 600; margin-bottom: 12px; }
+  .tag-modal-box input { width: 100%; padding: 8px 10px; font-size: calc(14px * var(--fs, 1)); font-family: var(--font); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); color: var(--text); outline: none; margin-bottom: 10px; }
   .tag-modal-box input:focus { border-color: var(--accent); }
   .tag-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .tag-suggestion { font-size: 12px; background: var(--tag-bg); color: var(--tag-text); padding: 3px 10px; border-radius: 99px; cursor: pointer; border: none; font-family: var(--font); }
+  .tag-suggestion { font-size: calc(12px * var(--fs, 1)); background: var(--tag-bg); color: var(--tag-text); padding: 3px 10px; border-radius: 99px; cursor: pointer; border: none; font-family: var(--font); }
   .tag-suggestion:hover { background: var(--accent-bg); color: var(--accent); }
 
   /* DRIVE MODAL (connect choice / sync conflict) */
   #drive-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
   #drive-modal.open { display: flex; }
   .drive-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; width: 360px; max-width: 100%; box-shadow: var(--shadow-md); }
-  .drive-modal-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
-  .drive-modal-box p { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
+  .drive-modal-box h3 { font-size: calc(15px * var(--fs, 1)); font-weight: 600; margin-bottom: 10px; }
+  .drive-modal-box p { font-size: calc(13px * var(--fs, 1)); color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
   .drive-modal-box .modal-btns { flex-wrap: wrap; }
 
   .shortlist-header .shortlist-newday { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
   /* Breadcrumb for a starred subtask in Today's Shortlist: one muted line above
      the task showing its nearest two ancestors ("…" if there are more). Only
      shown when the task's parent isn't itself in the shortlist. */
-  .crumb-line { padding: 2px 8px 0 34px; font-size: 11.5px; line-height: 1.5; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crumb-line { padding: 2px 8px 0 34px; font-size: calc(11.5px * var(--fs, 1)); line-height: 1.5; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .crumb-line .sep { margin: 0 5px; opacity: 0.7; }
 
   /* MOBILE NAV */
@@ -560,7 +574,7 @@
     .week-subtitle .sub-long { display: none; }
     .week-subtitle .sub-short { display: inline; }
     /* Mobile: the date is centered and the done count uses the tighter format. */
-    .list-progress { font-size: 14px; }
+    .list-progress { font-size: calc(14px * var(--fs, 1)); }
     .list-progress .prog-long { display: none; }
     .list-progress .prog-short { display: inline; }
     .week-title-area { text-align: center; }
@@ -569,9 +583,9 @@
        label and the two date fields fit inside a narrow screen. */
     .week-modal-box { padding: 20px; }
     .week-modal-box h2 { margin-bottom: 12px; }
-    .week-modal-box input { padding: 6px 8px; font-size: 13px; margin-bottom: 10px; }
-    .week-modal-box input[type="date"] { padding: 6px 4px; font-size: 12.5px; }
-    .carry-over-row { padding: 8px 10px; font-size: 12px; }
+    .week-modal-box input { padding: 6px 8px; font-size: calc(13px * var(--fs, 1)); margin-bottom: 10px; }
+    .week-modal-box input[type="date"] { padding: 6px 4px; font-size: calc(12.5px * var(--fs, 1)); }
+    .carry-over-row { padding: 8px 10px; font-size: calc(12px * var(--fs, 1)); }
     /* No hover on touch: hide the hover-controls; the keyboard action bar replaces them. */
     .task-controls { display: none; }
 
@@ -581,7 +595,7 @@
        Geometry note: checkbox centre sits at x=15 (4 row pad +
        11 half-checkbox); the indent guide lines and the note/meta
        rows are positioned from that, so keep them in step if it changes. */
-    body { font-size: 16px; }
+    body { font-size: calc(16px * var(--fs, 1)); }
     #header { padding: 12px 16px; gap: 8px; }
     /* App bar uses the theme accent. --on-accent (set in applyTheme) is white in
        light mode and near-black in dark mode, because dark-mode accents are bright. */
@@ -589,11 +603,11 @@
     #header .week-subtitle { color: var(--on-accent, #fff); }
     #header .btn.btn-icon { background: color-mix(in srgb, var(--on-accent, #fff) 16%, transparent); border-color: transparent; color: var(--on-accent, #fff); }
     #header .btn.btn-icon:hover, #header .btn.btn-icon:active { background: color-mix(in srgb, var(--on-accent, #fff) 28%, transparent); }
-    .btn { font-size: 14px; min-height: 40px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; }
+    .btn { font-size: calc(14px * var(--fs, 1)); min-height: 40px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; }
     .btn.btn-icon { width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 12px; }
     .btn.btn-icon svg { width: 24px; height: 24px; }
-    .btn-sm { font-size: 14px; min-height: 40px; padding: 0 16px; }
-    .week-subtitle { font-size: 17px; font-weight: 600; }
+    .btn-sm { font-size: calc(14px * var(--fs, 1)); min-height: 40px; padding: 0 16px; }
+    .week-subtitle { font-size: calc(17px * var(--fs, 1)); font-weight: 600; }
 
     /* Task rows */
     .task-item { margin-bottom: 0; }
@@ -615,7 +629,7 @@
     .checkbox::before { content: ''; position: absolute; inset: -9px -10px; }
     .checkbox.checked::after { width: 6px; height: 11px; }
     .checkbox.partial::after { width: 10px; height: 2px; }
-    .task-label, .subtask-list .task-label, .shortlist-label { font-size: 16px; line-height: 1.35; padding: 1px 4px; }
+    .task-label, .subtask-list .task-label, .shortlist-label { font-size: calc(16px * var(--fs, 1)); line-height: 1.35; padding: 1px 4px; }
     .note-indicator { padding: 6px; }
     .note-indicator svg { width: 18px; height: 18px; }
     .star-toggle, .shortlist-item .star-toggle,
@@ -630,18 +644,18 @@
     .task-note-area::before { left: 15px; }
     .task-meta, .task-note-area { padding-left: 34px; }
     .task-meta { gap: 8px; padding-top: 0; padding-bottom: 4px; margin-top: -6px; }
-    .tag-pill, .due-badge { font-size: 14px; min-height: 28px; padding: 0 12px; display: inline-flex; align-items: center; }
-    .tag-pill .remove-tag { font-size: 14px; }
-    .task-note { font-size: 16px; padding: 8px 12px; min-height: 44px; line-height: 1.4; }
+    .tag-pill, .due-badge { font-size: calc(14px * var(--fs, 1)); min-height: 28px; padding: 0 12px; display: inline-flex; align-items: center; }
+    .tag-pill .remove-tag { font-size: calc(14px * var(--fs, 1)); }
+    .task-note { font-size: calc(16px * var(--fs, 1)); padding: 8px 12px; min-height: 44px; line-height: 1.4; }
 
     /* Shortlist card */
     /* Top padding 16px = the 16px side padding, so "New day" is as far from the card's top edge as from its right edge. */
     .shortlist { padding: 16px 16px 8px; margin-bottom: 12px; }
     .shortlist-items { margin: 0 -8px; }
-    .shortlist-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
-    .list-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
-    .crumb-line { padding: 2px 8px 0 4px; margin-bottom: -6px; font-size: 13px; }
-    .add-root-btn { min-height: 48px; padding: 0 16px; gap: 12px; font-size: 16px; }
+    .shortlist-header { font-size: calc(13px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
+    .list-header { font-size: calc(13px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
+    .crumb-line { padding: 2px 8px 0 4px; margin-bottom: -6px; font-size: calc(13px * var(--fs, 1)); }
+    .add-root-btn { min-height: 48px; padding: 0 16px; gap: 12px; font-size: calc(16px * var(--fs, 1)); }
     .add-root-btn svg { width: 24px; height: 24px; }
 
     /* Delete confirmation */
@@ -653,17 +667,17 @@
     /* Navigation drawer */
     #sidebar { width: min(320px, 85vw); min-width: 0; }
     .sidebar-top { padding: 20px 16px 12px; }
-    .app-name { font-size: 14px; }
-    .sidebar-actions button, .drive-sync-btn, .settings-btn { font-size: 14px; min-height: 48px; padding: 0 16px; }
+    .app-name { font-size: calc(14px * var(--fs, 1)); }
+    .sidebar-actions button, .drive-sync-btn, .settings-btn { font-size: calc(14px * var(--fs, 1)); min-height: 48px; padding: 0 16px; }
     .weeks-list { padding: 8px 12px; }
     .week-item { min-height: 48px; padding: 0 8px 0 16px; border-radius: 28px; margin-bottom: 4px; }
-    .week-item-label { font-size: 14px; }
-    .week-item-count { font-size: 12px; }
+    .week-item-label { font-size: calc(14px * var(--fs, 1)); }
+    .week-item-count { font-size: calc(12px * var(--fs, 1)); }
     .week-item-menu-btn { opacity: 1; width: 40px; height: 40px; padding: 0; justify-content: center; }
     .week-item-menu-btn svg { width: 20px; height: 20px; }
     .week-menu-popover { min-width: 180px; padding: 8px 0; }
-    .week-menu-item { min-height: 48px; padding: 0 16px; font-size: 16px; border-radius: 0; display: flex; align-items: center; }
-    .drive-status { font-size: 12px; }
+    .week-menu-item { min-height: 48px; padding: 0 16px; font-size: calc(16px * var(--fs, 1)); border-radius: 0; display: flex; align-items: center; }
+    .drive-status { font-size: calc(12px * var(--fs, 1)); }
     .settings-btn svg, .settings-item svg { width: 20px; height: 20px; }
     /* Settings button: icon-only, pinned to the top-right of the drawer (#sidebar is position: fixed,
        so it is the containing block). The empty footer row collapses away. */
@@ -671,29 +685,31 @@
     .settings-btn { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; min-height: 40px; padding: 0; border: none; border-radius: 50%; z-index: 1; }
     .settings-btn-label { display: none; }
     .settings-menu { width: 360px; }
-    .settings-title { font-size: 16px; }
+    .settings-title { font-size: calc(16px * var(--fs, 1)); }
     .settings-close { width: 40px; height: 40px; }
     .settings-close svg { width: 24px; height: 24px; }
     .settings-row-label svg { width: 20px; height: 20px; }
-    .settings-item { min-height: 48px; font-size: 16px; padding: 0 12px; }
-    .settings-row-label { font-size: 16px; }
+    .settings-item { min-height: 48px; font-size: calc(16px * var(--fs, 1)); padding: 0 12px; }
+    .settings-row-label { font-size: calc(16px * var(--fs, 1)); }
     .theme-swatches { gap: 8px; }
     .theme-swatch { width: 28px; height: 28px; }
-    .font-seg button { min-height: 40px; font-size: 16px; }
+    .font-seg button { min-height: 40px; font-size: calc(16px * var(--fs, 1)); }
     html[data-density="comfy"] .task-row, html[data-density="comfy"] .shortlist-item-row { min-height: 44px; }
-    .app-version { font-size: 12px; }
+    .app-version { font-size: calc(12px * var(--fs, 1)); }
 
     /* Dialogs */
-    .week-modal-box h2, .tag-modal-box h3, .drive-modal-box h3 { font-size: 20px; }
-    .week-modal-box label { font-size: 14px; }
-    .week-modal-box input { font-size: 16px; padding: 12px; min-height: 48px; }
-    .week-modal-box input[type="date"] { font-size: 16px; padding: 12px 8px; }
-    .carry-over-row { font-size: 14px; padding: 12px; min-height: 48px; }
+    .week-modal-box h2, .tag-modal-box h3, .drive-modal-box h3 { font-size: calc(20px * var(--fs, 1)); }
+    .week-modal-box label { font-size: calc(14px * var(--fs, 1)); }
+    .week-modal-box input { font-size: calc(16px * var(--fs, 1)); padding: 12px; min-height: 48px; }
+    .week-modal-box input[type="date"] { font-size: calc(16px * var(--fs, 1)); padding: 12px 8px; }
+    /* The two date fields share one row; at Large they would clip the year on 360px phones, so they stay at 16px. */
+    html[data-fontsize="lg"] .week-modal-box input[type="date"] { font-size: 16px; }
+    .carry-over-row { font-size: calc(14px * var(--fs, 1)); padding: 12px; min-height: 48px; }
     .carry-over-row input[type="checkbox"] { width: 20px; height: 20px; }
     .tag-modal-box { width: calc(100% - 32px); max-width: 360px; }
-    .tag-modal-box input { font-size: 16px; padding: 12px; min-height: 48px; }
-    .tag-suggestion { font-size: 14px; min-height: 32px; padding: 0 14px; }
-    .drive-modal-box p { font-size: 16px; }
+    .tag-modal-box input { font-size: calc(16px * var(--fs, 1)); padding: 12px; min-height: 48px; }
+    .tag-suggestion { font-size: calc(14px * var(--fs, 1)); min-height: 32px; padding: 0 14px; }
+    .drive-modal-box p { font-size: calc(16px * var(--fs, 1)); }
     .modal-btns { gap: 8px; }
     .modal-x { width: 40px; height: 40px; }
     .modal-x svg { width: 24px; height: 24px; }
@@ -702,13 +718,13 @@
     #search-modal { padding: 64px 16px 16px; }
     .search-kbd { display: none; }
     .search-input-row { padding: 0 16px; min-height: 56px; }
-    #search-input { font-size: 16px; }
+    #search-input { font-size: calc(16px * var(--fs, 1)); }
     .search-result-item { padding: 8px 16px; min-height: 48px; }
-    .search-task-label { font-size: 16px; }
-    .search-breadcrumb { font-size: 13px; }
-    .search-task-note { font-size: 14px; }
-    .search-week-label { font-size: 12px; padding: 8px 16px 4px; }
-    .search-empty, .search-no-results { font-size: 16px; }
+    .search-task-label { font-size: calc(16px * var(--fs, 1)); }
+    .search-breadcrumb { font-size: calc(13px * var(--fs, 1)); }
+    .search-task-note { font-size: calc(14px * var(--fs, 1)); }
+    .search-week-label { font-size: calc(12px * var(--fs, 1)); padding: 8px 16px 4px; }
+    .search-empty, .search-no-results { font-size: calc(16px * var(--fs, 1)); }
     mark.search-hl { padding: 0 1px; }
   }
 </style>
@@ -760,6 +776,10 @@
     <div class="font-seg" id="font-seg" role="radiogroup" aria-label="Font"></div>
   </div>
   <div class="settings-row">
+    <div class="settings-row-label"><span data-icon="type" data-icon-size="14"></span> Text size</div>
+    <div class="font-seg" id="fontsize-seg" role="radiogroup" aria-label="Text size"></div>
+  </div>
+  <div class="settings-row">
     <div class="settings-row-label"><span data-icon="menu" data-icon-size="14"></span> Spacing</div>
     <div class="font-seg" id="density-seg" role="radiogroup" aria-label="Row spacing"></div>
     <!-- Live preview: uses the real row classes, so it follows html[data-density] like the actual list. -->
@@ -779,7 +799,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v60</div>
+  <div class="app-version" title="App version">v61</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -839,7 +859,7 @@
     <label>Date range</label>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
       <input type="date" id="week-start-input" style="flex:1;margin-bottom:0;" />
-      <span style="color:var(--text3);font-size:13px;">–</span>
+      <span style="color:var(--text3);font-size: calc(13px * var(--fs, 1));">–</span>
       <input type="date" id="week-end-input" style="flex:1;margin-bottom:0;" />
     </div>
     <label id="carry-over-row" class="carry-over-row" style="display:none;">
@@ -1070,6 +1090,28 @@ function load() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 load();
+// ─── TEXT SIZE ───────────────────────────────────────────────────────────────
+// Small / Medium / Large scale every font-size via --fs (see CSS). Medium = original sizes. Stored in localStorage `wt_fontsize`.
+const FONT_SIZES = { sm: 'Small', md: 'Medium', lg: 'Large' };
+let currentFontSize = localStorage.getItem('wt_fontsize') || 'md';
+if (!FONT_SIZES[currentFontSize]) currentFontSize = 'md';
+function applyFontSize(key) {
+  if (!FONT_SIZES[key]) key = 'md';
+  currentFontSize = key;
+  if (key === 'md') document.documentElement.removeAttribute('data-fontsize');
+  else document.documentElement.setAttribute('data-fontsize', key);
+  try { localStorage.setItem('wt_fontsize', key); } catch (e) {}
+  renderFontSizePicker();
+}
+function renderFontSizePicker() {
+  const el = document.getElementById('fontsize-seg');
+  if (!el) return;
+  el.innerHTML = Object.entries(FONT_SIZES).map(([key, label]) =>
+    `<button class="${key === currentFontSize ? 'active' : ''}" role="radio" aria-checked="${key === currentFontSize}"
+      onclick="applyFontSize('${key}'); event.stopPropagation();">${label}</button>`
+  ).join('');
+}
+
 // ─── DENSITY ─────────────────────────────────────────────────────────────────
 // Compact (original spacing) or Comfy (+4px per row). Stored in localStorage `wt_density`; default Comfy.
 const DENSITIES = { compact: 'Compact', comfy: 'Comfy' };
@@ -1095,6 +1137,7 @@ if (localStorage.getItem('wt_dark') === '1') document.body.classList.add('dark')
 hydrateStaticIcons();
 applyTheme(currentTheme);
 applyFont(currentFont);
+applyFontSize(currentFontSize);
 applyDensity(currentDensity);
 updateDarkBtn();
 renderSidebar();
@@ -1619,7 +1662,7 @@ document.addEventListener('keydown', e => {
 
 function renderSidebar() {
   const list = document.getElementById('weeks-list');
-  if (!state.weeks.length) { list.innerHTML = '<div style="padding:16px 12px;font-size:12px;color:var(--text3);">No weeks yet.</div>'; return; }
+  if (!state.weeks.length) { list.innerHTML = '<div style="padding:16px 12px;font-size: calc(12px * var(--fs, 1));color:var(--text3);">No weeks yet.</div>'; return; }
   list.innerHTML = state.weeks.map(w => {
     const total = countAll(w.tasks);
     const done = countDone(w.tasks);
@@ -3522,13 +3565,13 @@ function showUpdateBanner() {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md); padding: 10px 14px; display: flex; align-items: center;
-    gap: 12px; z-index: 9999; font-family: var(--font); font-size: 13px; color: var(--text);
+    gap: 12px; z-index: 9999; font-family: var(--font); font-size: calc(13px * var(--fs, 1)); color: var(--text);
     white-space: nowrap; max-width: calc(100vw - 24px);
   `;
   banner.innerHTML = `
     <span>New version available</span>
-    <button onclick="location.reload()" style="padding:6px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;">Reload</button>
-    <button onclick="this.closest('#update-banner').remove()" aria-label="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:2px 4px;">×</button>
+    <button onclick="location.reload()" style="padding:6px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size: calc(12px * var(--fs, 1));font-weight:600;">Reload</button>
+    <button onclick="this.closest('#update-banner').remove()" aria-label="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size: calc(16px * var(--fs, 1));line-height:1;padding:2px 4px;">×</button>
   `;
   document.body.appendChild(banner);
 }
@@ -3549,13 +3592,13 @@ function showInstallBanner() {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md); padding: 12px 18px; display: flex; align-items: center;
-    gap: 12px; z-index: 9999; font-family: var(--font); font-size: 13px; color: var(--text);
+    gap: 12px; z-index: 9999; font-family: var(--font); font-size: calc(13px * var(--fs, 1)); color: var(--text);
     white-space: nowrap;
   `;
   banner.innerHTML = `
     <span>📲 Install This Week as an app</span>
-    <button onclick="installApp()" style="padding:6px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;">Install</button>
-    <button onclick="this.closest('#install-banner').remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:2px 4px;">×</button>
+    <button onclick="installApp()" style="padding:6px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size: calc(12px * var(--fs, 1));font-weight:600;">Install</button>
+    <button onclick="this.closest('#install-banner').remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size: calc(16px * var(--fs, 1));line-height:1;padding:2px 4px;">×</button>
   `;
   document.body.appendChild(banner);
 }
