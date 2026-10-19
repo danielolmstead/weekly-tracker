@@ -190,6 +190,8 @@
   .task-item:hover:has(+ .subtask-list) { border-radius: var(--radius) var(--radius) 0 0; }
   .task-item:hover + .subtask-list { background: var(--surface2); border-radius: 0 0 var(--radius) var(--radius); position: relative; z-index: 1; }
   .task-item:hover .task-controls { opacity: 1; }
+  .shortlist-item-row:hover > .task-controls { opacity: 1; }
+  .shortlist-item-row > .task-controls { margin-top: -1px; }
   .task-item:hover .drag-handle { opacity: 1; }
   .task-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--radius); transition: background 0.1s; position: relative; }
   .drag-handle { cursor: grab; color: var(--text3); flex-shrink: 0; padding: 2px; opacity: 0; transition: opacity 0.15s; user-select: none; display: inline-flex; align-items: center; }
@@ -279,29 +281,24 @@
   .task-btn:hover { background: var(--surface); color: var(--text); }
   .task-btn.note-active { color: var(--accent); }
   .task-btn.danger:hover { color: var(--danger); }
-  /* Mobile-only overflow menu. .task-controls above is hover-to-reveal, which
-     has no reliable equivalent on a touch screen — there's no stable :hover
-     state to tap into. Rather than making all four buttons always-visible
-     (cramped on a narrow row), mobile swaps them for a single tap-to-open
-     "..." menu (see the @media block below), which also gets Indent/Outdent
-     added to it, since Tab/Shift+Tab has no touch equivalent either. Mirrors
-     the existing .week-item-menu-btn / .week-menu-popover pattern one-for-one
-     (same open/close mechanics, same click-outside-to-dismiss via the
-     document click listener near toggleWeekMenu) rather than inventing a new
-     one. Hidden on desktop by default; shown only under the breakpoint. */
-  .task-menu-btn { display: none; background: none; border: none; padding: 5px; border-radius: 4px; cursor: pointer; color: var(--text3); line-height: 1; flex-shrink: 0; align-items: center; justify-content: center; }
-  .task-menu-btn:hover { background: var(--surface); color: var(--text); }
-  .task-menu-popover { position: absolute; top: 100%; right: 8px; margin-top: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); min-width: 168px; z-index: 50; padding: 4px; display: none; }
-  .task-menu-popover.open { display: block; }
-  .task-menu-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; padding: 7px 10px; font-size: 12.5px; background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text); font-family: var(--font); }
-  .task-menu-item:hover { background: var(--surface2); }
-  .task-menu-item.danger { color: var(--danger); }
-  .task-menu-item.danger:hover { background: var(--danger-bg); }
-  /* Indent has no previous sibling to become a child of; Outdent has no
-     parent to move out of — renderTaskList disables the button rather than
-     leaving it tappable and silently doing nothing. */
-  .task-menu-item:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
-  .task-menu-divider { height: 1px; background: var(--border); margin: 4px 2px; }
+  /* .task-controls above is hover-to-reveal, which has no reliable equivalent on a
+     touch screen. On phones it is hidden (see the @media block below) and the
+     keyboard action bar (#kb-bar, further down) carries those actions instead,
+     plus Indent/Outdent, the touch equivalent of Tab/Shift+Tab. */
+  /* Mobile keyboard action bar: docked just above the on-screen keyboard while a
+     task label is being edited (shown/positioned by the KEYBOARD ACTION BAR script).
+     Hidden unless JS adds .show, which only happens on touch / narrow screens. */
+  #kb-bar { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; height: 52px; box-sizing: border-box; align-items: center; gap: 2px; padding: 0 6px; background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+  #kb-bar.show { display: flex; }
+  .kb-btn { width: 44px; height: 44px; flex: none; border: 0; border-radius: 10px; background: none; color: var(--text2); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .kb-btn svg { width: 22px; height: 22px; }
+  .kb-btn.primary { background: var(--accent-bg); color: var(--accent); }
+  .kb-btn:active:not(:disabled) { background: var(--surface2); }
+  .kb-btn:disabled { background: none; color: var(--text3); opacity: 0.45; cursor: default; }
+  .kb-sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; flex: none; }
+  .kb-btn[hidden] { display: none; }
+  .kb-btn.kb-delete { color: var(--danger); }
+  .kb-spacer { flex: 1; }
   /* Expand/collapse toggle sits at the far right of a parent task's row.
      Visually a sibling to .task-controls but with its own (always-on) opacity
      so users can see at a glance whether a task is currently collapsed. */
@@ -371,6 +368,10 @@
      container — matches the main-list task-item + task-row pattern. */
   .shortlist-item { list-style: none; display: block; }
   .shortlist-item-row { display: flex; align-items: flex-start; gap: 8px; padding: 4px 8px; border-radius: var(--radius); min-height: 28px; }
+  /* Right edge: the card pads its content 18px, and "New day" / "Add task" stop there,
+     while .shortlist-items bleeds 18px past that. Pad the row so the star icon's right
+     edge lands on the same line (the star button adds 3px of its own padding). */
+  .shortlist-item-row { padding-right: 15px; }
   .shortlist-item-row:hover { background: var(--surface2); }
   /* Vertically center the small fixed-size row controls against the FIRST
      line of a wrapping label. `align-items: flex-start` on the row keeps
@@ -571,10 +572,8 @@
     .week-modal-box input { padding: 6px 8px; font-size: 13px; margin-bottom: 10px; }
     .week-modal-box input[type="date"] { padding: 6px 4px; font-size: 12.5px; }
     .carry-over-row { padding: 8px 10px; font-size: 12px; }
-    /* Swap the desktop hover-controls for the tap-to-open overflow menu —
-       see the .task-menu-btn comment above for why. */
+    /* No hover on touch: hide the hover-controls; the keyboard action bar replaces them. */
     .task-controls { display: none; }
-    .task-menu-btn { display: inline-flex; }
 
     /* ── MATERIAL SIZING FOR TOUCH ─────────────────────────────────────────
        Material 3 on phones: 48dp touch targets (40dp on list-row buttons, by choice), 16sp body text,
@@ -603,6 +602,10 @@
     .shortlist-item-row > .drag-handle,
     .shortlist-item-row > .star-toggle,
     .shortlist-item-row > .expand-toggle { margin-top: 0; }
+    /* On phones the stars keep a little more room than the "New day" button / "Add task" box:
+       the star icon is a small tap target, so its right edge sits ~6px inside that line
+       (row padding 4px + the 40px star button's own 10px around the 20px icon, vs the
+       rows' 8px bleed). Desktop aligns them exactly (see .shortlist-item-row above). */
     /* No grip on phones: press and hold a row to drag it (see dragOptions()). */
     .drag-handle, .shortlist-item .drag-handle.spacer { display: none; }
     .task-row, .shortlist-item-row { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -616,12 +619,11 @@
     .note-indicator { padding: 6px; }
     .note-indicator svg { width: 18px; height: 18px; }
     .star-toggle, .shortlist-item .star-toggle,
-    .task-menu-btn,
     .expand-toggle, .shortlist-item .expand-toggle { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
-    .star-toggle svg, .task-menu-btn svg, .expand-toggle svg { width: 24px; height: 24px; }
+    .star-toggle svg, .expand-toggle svg { width: 24px; height: 24px; }
     /* Stars a touch smaller than the other icons; the 40px tap target is unchanged */
     .star-toggle svg { width: 20px; height: 20px; }
-    .star-toggle:active, .task-menu-btn:active, .expand-toggle:active { background: var(--surface2); }
+    .star-toggle:active, .expand-toggle:active { background: var(--surface2); }
 
     /* Indent guides + note/meta rows follow the new checkbox centre */
     .subtask-list::before, .shortlist-subitems::before { left: 15px; }
@@ -633,7 +635,8 @@
     .task-note { font-size: 16px; padding: 8px 12px; min-height: 44px; line-height: 1.4; }
 
     /* Shortlist card */
-    .shortlist { padding: 8px 16px 8px; margin-bottom: 12px; }
+    /* Top padding 16px = the 16px side padding, so "New day" is as far from the card's top edge as from its right edge. */
+    .shortlist { padding: 16px 16px 8px; margin-bottom: 12px; }
     .shortlist-items { margin: 0 -8px; }
     .shortlist-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
     .list-header { font-size: 13px; margin-bottom: 0; min-height: 40px; }
@@ -641,11 +644,7 @@
     .add-root-btn { min-height: 48px; padding: 0 16px; gap: 12px; font-size: 16px; }
     .add-root-btn svg { width: 24px; height: 24px; }
 
-    /* Row overflow menu + delete confirmation */
-    .task-menu-popover { min-width: 220px; padding: 8px 0; right: 12px; }
-    .task-menu-item { min-height: 48px; padding: 0 16px; font-size: 16px; gap: 16px; border-radius: 0; }
-    .task-menu-item svg { width: 22px; height: 22px; }
-    .task-menu-divider { margin: 8px 0; }
+    /* Delete confirmation */
     .delete-confirm { right: 40px; padding: 4px; gap: 4px; }
     .task-item:has(.expand-toggle) .delete-confirm { right: 80px; }
     .delete-confirm-btn { width: 48px; height: 48px; }
@@ -780,7 +779,19 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v54</div>
+  <div class="app-version" title="App version">v60</div>
+</div>
+
+<div id="kb-bar" role="toolbar" aria-label="Task actions">
+  <button class="kb-btn primary" id="kb-outdent" type="button" aria-label="Outdent" onclick="kbBarAction('outdent', event)"><span data-icon="outdent" data-icon-size="22"></span></button>
+  <button class="kb-btn primary" id="kb-indent" type="button" aria-label="Indent" onclick="kbBarAction('indent', event)"><span data-icon="indent" data-icon-size="22"></span></button>
+  <span class="kb-sep"></span>
+  <button class="kb-btn" type="button" aria-label="Note" onclick="kbBarAction('note', event)"><span data-icon="pencil" data-icon-size="22"></span></button>
+  <button class="kb-btn" type="button" aria-label="Due date" onclick="kbBarAction('due', event)"><span data-icon="calendar" data-icon-size="22"></span></button>
+  <button class="kb-btn" type="button" aria-label="Tag" onclick="kbBarAction('tag', event)"><span data-icon="tag" data-icon-size="22"></span></button>
+  <span class="kb-spacer"></span>
+  <button class="kb-btn kb-delete" id="kb-delete" type="button" aria-label="Delete task" onclick="kbBarAction('delete', event)"><span data-icon="trash" data-icon-size="22"></span></button>
+  <button class="kb-btn" type="button" aria-label="Hide keyboard" onclick="kbBarAction('hide', event)"><span data-icon="chevron-down" data-icon-size="22"></span></button>
 </div>
 
 <div id="main">
@@ -920,6 +931,8 @@ const ICON_PATHS = {
   'chevron-down': '<path d="m6 9 6 6 6-6"/>',
   'chevron-right': '<path d="m9 18 6-6-6-6"/>',
   'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+  indent: '<path d="M4 5h16"/><path d="M12 10h8"/><path d="M12 14h8"/><path d="M4 19h16"/><path d="M4 9l4 3-4 3z"/>',
+  outdent: '<path d="M4 5h16"/><path d="M12 10h8"/><path d="M12 14h8"/><path d="M4 19h16"/><path d="M8 9l-4 3 4 3z"/>',
   star: '<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
   menu: '<path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/>'
@@ -1508,25 +1521,9 @@ function closeAllWeekMenus() {
   document.querySelectorAll('.week-menu-popover.open').forEach(p => p.classList.remove('open'));
 }
 
-// Mobile task-row overflow menu ("..." button) — see the .task-menu-btn CSS
-// comment for why this exists. Same open/close mechanics as toggleWeekMenu/
-// closeAllWeekMenus above, just targeting .task-menu-popover instead.
-function toggleTaskMenu(e, id) {
-  e.stopPropagation();
-  const popover = document.getElementById('task-menu-' + id);
-  const isOpen = popover && popover.classList.contains('open');
-  closeAllTaskMenus();
-  if (popover && !isOpen) popover.classList.add('open');
-}
-
-function closeAllTaskMenus() {
-  document.querySelectorAll('.task-menu-popover.open').forEach(p => p.classList.remove('open'));
-}
-
 // Close menus when clicking outside
 document.addEventListener('click', () => {
   closeAllWeekMenus();
-  closeAllTaskMenus();
   closeSettingsMenu();
 });
 
@@ -1814,7 +1811,18 @@ function selectAll(el) {
 // Clicking trash again while the popover is showing also cancels.
 // (pendingDeleteId is declared at the top of the script alongside other state.)
 
+// A task with no label, note, tags, due date or subtasks has nothing to lose,
+// so it is deleted straight away with no confirmation.
+function isEmptyTask(t) {
+  return !!t && !(t.label || '').trim() && !(t.note || '').trim()
+    && !(t.tags && t.tags.length) && !t.due
+    && !(t.children && t.children.length);
+}
+
 function deleteTask(id) {
+  const w = currentWeek();
+  const task = w && findTask(w.tasks, id);
+  if (isEmptyTask(task)) { confirmDelete(id); return; }
   // If the popover is already up for THIS task, treat the second click as cancel.
   if (pendingDeleteId === id) { pendingDeleteId = null; renderChecklist(); return; }
   // Otherwise (nothing pending, or pending on a different task) open it here.
@@ -1840,7 +1848,7 @@ function cancelDelete() {
 // the trash button that opened it) to dismiss the pending confirmation.
 document.addEventListener('click', (e) => {
   if (!pendingDeleteId) return;
-  if (e.target.closest('.delete-confirm, .task-btn.danger')) return;
+  if (e.target.closest('.delete-confirm, .task-btn.danger, .kb-delete')) return;
   pendingDeleteId = null;
   renderChecklist();
 });
@@ -1943,6 +1951,103 @@ document.addEventListener('click', (e) => {
     startY = null;
   }, { passive: true });
 })();
+
+// ─── KEYBOARD ACTION BAR (phones) ────────────────────────────────────────
+// While a task label is focused on a touch / narrow screen, #kb-bar sits directly
+// above the on-screen keyboard with Outdent, Indent, Note, Due, Tag and Hide keyboard.
+// Indent/Outdent are the touch equivalent of Tab / Shift+Tab, and because the bar
+// never takes focus, the keyboard stays open while you restructure a list.
+// Positioning uses visualViewport: on iOS Safari and Android Chrome the keyboard
+// overlays the page without resizing the layout viewport, so a fixed bar at
+// bottom:0 would sit behind it; we lift it by the keyboard's height instead.
+(function () {
+  const bar = document.getElementById('kb-bar');
+  if (!bar) return;
+  const mq = window.matchMedia('(pointer: coarse), (max-width: 768px)');
+  const vv = window.visualViewport;
+  const BAR_H = 52;
+  let taskId = null;
+  let hideTimer = null;
+
+  // Main-list labels (.task-label) and Today's Shortlist labels (.shortlist-label).
+  function isLabel(el) {
+    return !!(el && el.classList && (el.classList.contains('task-label') || el.classList.contains('shortlist-label')));
+  }
+  function activeLabel() {
+    const el = document.activeElement;
+    return isLabel(el) ? el : null;
+  }
+  function position() {
+    if (!bar.classList.contains('show')) return;
+    const lift = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    bar.style.transform = lift ? `translateY(${-lift}px)` : '';
+  }
+  function updateButtons() {
+    const w = currentWeek();
+    if (!w || !taskId) return;
+    const info = findListContaining(w.tasks, taskId);
+    document.getElementById('kb-indent').disabled = !info || info.index === 0;
+    document.getElementById('kb-outdent').disabled = !findParent(w.tasks, taskId);
+  }
+  // Keep the edited row from hiding underneath the bar.
+  function keepVisible() {
+    const el = activeLabel();
+    if (!el || !vv) return;
+    const bottom = el.getBoundingClientRect().bottom;
+    const limit = vv.offsetTop + vv.height - BAR_H - 8;
+    if (bottom > limit) window.scrollBy(0, bottom - limit);
+  }
+  function show(el) {
+    clearTimeout(hideTimer);
+    const item = el.closest('.task-item, .shortlist-item');
+    if (!item) return;
+    taskId = item.dataset.id;
+    // Delete is main-list only: from the shortlist, deleting would remove the task
+    // from the week entirely, and its confirm popover lives in the main list.
+    document.getElementById('kb-delete').hidden = el.classList.contains('shortlist-label');
+    bar.classList.add('show');
+    position();
+    updateButtons();
+    keepVisible();
+  }
+  function hide() {
+    bar.classList.remove('show');
+    bar.style.transform = '';
+    taskId = null;
+  }
+
+  document.addEventListener('focusin', (e) => {
+    if (!mq.matches) return;
+    const el = e.target;
+    if (isLabel(el) && el.closest('.task-item, .shortlist-item')) show(el);
+  });
+  document.addEventListener('focusout', () => {
+    clearTimeout(hideTimer);
+    // Indent/Outdent/new-task re-render the list and refocus right away, so wait a
+    // beat and only hide if focus really left the labels.
+    hideTimer = setTimeout(() => { if (!activeLabel()) hide(); }, 120);
+  });
+  if (vv) {
+    vv.addEventListener('resize', () => { position(); keepVisible(); });
+    vv.addEventListener('scroll', position);
+  }
+  // Taps on the bar must not steal focus from the label (that would close the keyboard).
+  const keepFocus = (e) => e.preventDefault();
+  bar.addEventListener('pointerdown', keepFocus);
+  bar.addEventListener('mousedown', keepFocus);
+
+  window.kbBarAction = function (action, ev) {
+    const id = taskId;
+    if (!id) return;
+    if (action === 'indent') indentTask(id, true);
+    else if (action === 'outdent') unindentTask(id, true);
+    else if (action === 'note') toggleNote(id);
+    else if (action === 'tag') openTagModal(id);
+    else if (action === 'due') setDue(id, ev);
+    else if (action === 'delete') deleteTask(id);
+    else if (action === 'hide') { const el = activeLabel(); if (el) el.blur(); }
+  };
+})();
 // Pasting into the label or note contenteditables should insert plain text
 // only. Otherwise formatted paste from Word/browsers ends up as arbitrary
 // HTML in the DOM — messes with linkification, styling, and the innerText
@@ -2038,12 +2143,18 @@ function toggleNote(id) {
 // updateLabel is wired via onblur/oninput and mirrors edits to the main
 // list. This just handles keys that should commit the edit: Enter and
 // Escape both blur the field. Structural keys (Tab, arrows) are left as
-// browser defaults inside the shortlist to avoid surprises — reordering
-// happens via drag, and hierarchy edits belong in the main list.
-function handleShortlistLabelKeydown(e) {
+// browser defaults inside the shortlist — reordering happens via drag. Tab /
+// Shift+Tab indent and outdent the task in the shared tree, same as the main list.
+function handleShortlistLabelKeydown(e, id) {
   if (e.key === 'Enter' || e.key === 'Escape') {
     e.preventDefault();
     e.target.blur();
+  } else if (e.key === 'Tab' && id) {
+    // Same as the main list: Tab indents, Shift+Tab outdents. This restructures the
+    // shared task tree (the shortlist is just a filtered view of it).
+    e.preventDefault();
+    if (e.shiftKey) unindentTask(id);
+    else indentTask(id);
   }
 }
 
@@ -2147,10 +2258,15 @@ function addSiblingTask(id) {
   save();
   renderChecklist();
   updateProgress();
-  setTimeout(() => {
+  // Focus the new label immediately (same keypress) so a phone keyboard stays open;
+  // fall back to a short delay if the element isn't there yet.
+  const focusNew = () => {
     const el = document.querySelector(`[data-id="${t.id}"] .task-label`);
-    if (el) { el.focus(); selectAll(el); }
-  }, 30);
+    if (!el) return false;
+    el.focus(); selectAll(el);
+    return true;
+  };
+  if (!focusNew()) setTimeout(focusNew, 30);
 }
 
 // Click the chevron handle on a parent task to show/hide its children.
@@ -2182,19 +2298,29 @@ function expandAncestors(id) {
 // selection. These two put it back exactly where it was — in particular a label that
 // already has text keeps its cursor position instead of jumping to the start.
 function captureLabelCaret(id) {
-  const el = document.querySelector(`[data-id="${id}"] .task-label`);
+  // The focused label may be the main-list one or this task's row in Today's Shortlist.
+  const act = document.activeElement;
+  const shortItem = act && act.classList && act.classList.contains('shortlist-label') ? act.closest('.shortlist-item') : null;
+  const inShort = !!(shortItem && shortItem.dataset.id === id);
+  const el = inShort ? act : document.querySelector(`[data-id="${id}"] .task-label`);
   const sel = window.getSelection();
-  if (!el || !sel.rangeCount || !el.contains(sel.anchorNode)) return null;
+  if (!el || !sel.rangeCount || !el.contains(sel.anchorNode)) return inShort ? { shortlist: true, start: null, end: null } : null;
   const r = sel.getRangeAt(0);
   const pre = document.createRange();
   pre.selectNodeContents(el);
   pre.setEnd(r.startContainer, r.startOffset);
   const start = pre.toString().length;
-  return { start, end: start + r.toString().length };
+  return { start, end: start + r.toString().length, shortlist: inShort };
+}
+// The label to put the cursor back in after a re-render: same place it was captured from.
+function labelElFor(id, caret) {
+  return caret && caret.shortlist
+    ? document.querySelector(`.shortlist-item[data-id="${id}"] .shortlist-label`)
+    : document.querySelector(`[data-id="${id}"] .task-label`);
 }
 function restoreLabelCaret(el, caret) {
   el.focus();
-  if (!caret) return;
+  if (!caret || caret.start === null) return;
   const locate = (offset) => {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     let node, remaining = offset, last = null;
@@ -2216,7 +2342,7 @@ function restoreLabelCaret(el, caret) {
 }
 
 // Tab: make current task a child of the task immediately above it (at same level)
-function indentTask(id) {
+function indentTask(id, syncFocus) {
   const w = currentWeek(); if (!w) return;
   const caret = captureLabelCaret(id);
   const info = findListContaining(w.tasks, id);
@@ -2230,14 +2356,17 @@ function indentTask(id) {
   save();
   renderChecklist();
   updateProgress();
-  setTimeout(() => {
-    const el = document.querySelector(`[data-id="${id}"] .task-label`);
+  const refocus = () => {
+    const el = labelElFor(id, caret);
     if (el) restoreLabelCaret(el, caret);
-  }, 30);
+  };
+  // syncFocus: the keyboard action bar passes true so focus lands back in the label
+  // inside the same tap. iOS only keeps the keyboard open if that happens.
+  if (syncFocus) refocus(); else setTimeout(refocus, 30);
 }
 
 // Shift+Tab: move task out of its parent, placing it after the parent
-function unindentTask(id) {
+function unindentTask(id, syncFocus) {
   const w = currentWeek(); if (!w) return;
   const caret = captureLabelCaret(id);
   // Find parent
@@ -2253,10 +2382,13 @@ function unindentTask(id) {
   save();
   renderChecklist();
   updateProgress();
-  setTimeout(() => {
-    const el = document.querySelector(`[data-id="${id}"] .task-label`);
+  const refocus = () => {
+    const el = labelElFor(id, caret);
     if (el) restoreLabelCaret(el, caret);
-  }, 30);
+  };
+  // syncFocus: the keyboard action bar passes true so focus lands back in the label
+  // inside the same tap. iOS only keeps the keyboard open if that happens.
+  if (syncFocus) refocus(); else setTimeout(refocus, 30);
 }
 
 // ─── DUE DATES ───────────────────────────────────────────────────────────────
@@ -2585,17 +2717,6 @@ function renderTaskList(tasks, container, depth = 0) {
           <button class="task-btn" onclick="setDue('${t.id}', event)" title="Set due date">${icon('calendar', 13)}</button>
           <button class="task-btn danger" onclick="deleteTask('${t.id}')" title="Delete">${icon('trash', 13)}</button>
         </div>
-        <button class="task-menu-btn" onclick="toggleTaskMenu(event, '${t.id}')" title="More options" aria-label="Task options">${icon('more', 14)}</button>
-        <div class="task-menu-popover" id="task-menu-${t.id}" onclick="event.stopPropagation()">
-          <button class="task-menu-item" onclick="toggleNote('${t.id}'); closeAllTaskMenus();">${icon('pencil', 13)}<span>${noteOpen ? 'Hide note' : 'Add note'}</span></button>
-          <button class="task-menu-item" onclick="setDue('${t.id}', event); closeAllTaskMenus();">${icon('calendar', 13)}<span>${t.due ? 'Change due date' : 'Set due date'}</span></button>
-          <button class="task-menu-item" onclick="openTagModal('${t.id}'); closeAllTaskMenus();">${icon('tag', 13)}<span>Add tag</span></button>
-          <div class="task-menu-divider"></div>
-          <button class="task-menu-item" ${idx === 0 ? 'disabled' : ''} onclick="indentTask('${t.id}'); closeAllTaskMenus();">${icon('chevron-right', 13)}<span>Indent</span></button>
-          <button class="task-menu-item" ${depth === 0 ? 'disabled' : ''} onclick="unindentTask('${t.id}'); closeAllTaskMenus();">${icon('chevron-left', 13)}<span>Outdent</span></button>
-          <div class="task-menu-divider"></div>
-          <button class="task-menu-item danger" onclick="deleteTask('${t.id}'); closeAllTaskMenus();">${icon('trash', 13)}<span>Delete</span></button>
-        </div>
         ${expandToggle}
         <button class="star-toggle ${t.shortlisted ? 'starred' : ''}" onclick="toggleStar('${t.id}')" title="${t.shortlisted ? "Remove from Today" : "Add to Today"}">${icon('star', 14)}</button>
         ${t.id === pendingDeleteId ? `
@@ -2773,6 +2894,7 @@ function renderShortlistItems(tasks, container, isRoot) {
     const isPartial = hasChildren && t.children.some(c => c.done) && !t.children.every(c => c.done);
     const checkClass = t.done ? 'checked' : (isPartial ? 'partial' : '');
     const isCollapsed = t.shortlistCollapsed !== undefined ? !!t.shortlistCollapsed : true;
+    const shortNoteOpen = t.noteOpen !== undefined ? !!t.noteOpen : !!t.note;
     const starHtml = t.shortlisted
       ? `<button class="star-toggle starred" onclick="toggleStar('${t.id}')" title="Remove from Today">${icon('star', 14)}</button>`
       : '';
@@ -2812,8 +2934,13 @@ function renderShortlistItems(tasks, container, isRoot) {
         <div class="shortlist-label" contenteditable="true" data-done="${t.done}" spellcheck="false"
           oninput="updateLabel('${t.id}', this.textContent)"
           onblur="updateLabel('${t.id}', this.textContent.trim(), true)"
-          onkeydown="handleShortlistLabelKeydown(event)"
+          onkeydown="handleShortlistLabelKeydown(event, '${t.id}')"
         >${linkify(t.label)}</div>
+        <div class="task-controls">
+          <button class="task-btn note-btn ${shortNoteOpen ? 'note-active' : ''}" onclick="toggleNote('${t.id}')" title="Toggle note">${icon('pencil', 13)}</button>
+          <button class="task-btn" onclick="openTagModal('${t.id}')" title="Add tag">${icon('tag', 13)}</button>
+          <button class="task-btn" onclick="setDue('${t.id}', event)" title="Set due date">${icon('calendar', 13)}</button>
+        </div>
         ${chevronHtml}
         ${starHtml}
       </div>
