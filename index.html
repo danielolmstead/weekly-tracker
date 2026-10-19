@@ -122,6 +122,8 @@
     html[data-density="comfy"] .task-row { padding-top: 8px; padding-bottom: 8px; }
     html[data-density="comfy"] .shortlist-item-row { padding-top: 7px; padding-bottom: 7px; min-height: 34px; }
   }
+  .density-preview { margin-top: 10px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); pointer-events: none; user-select: none; }
+  .density-preview .drag-handle { opacity: 0; width: 18px; box-sizing: border-box; } /* empty here: reserve the real icon+padding width so the indent line sits under the parent checkbox */
   .font-seg button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .settings-sep { height: 1px; background: var(--border); margin: 4px 0; }
   .app-version { padding: 6px 10px 4px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); }
@@ -757,13 +759,23 @@
   <div class="settings-row">
     <div class="settings-row-label"><span data-icon="menu" data-icon-size="14"></span> Spacing</div>
     <div class="font-seg" id="density-seg" role="radiogroup" aria-label="Row spacing"></div>
+    <!-- Live preview: uses the real row classes, so it follows html[data-density] like the actual list. -->
+    <div class="density-preview" aria-hidden="true">
+      <ul class="checklist">
+        <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox partial"></div><div class="task-label-wrap"><div class="task-label">Plan weekend trip</div></div></div></li>
+        <ul class="subtask-list">
+          <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox checked"></div><div class="task-label-wrap"><div class="task-label" data-done="true">Book campsite</div></div></div></li>
+          <li class="task-item"><div class="task-row"><span class="drag-handle"></span><div class="checkbox"></div><div class="task-label-wrap"><div class="task-label">Pack the cooler</div></div></div></li>
+        </ul>
+      </ul>
+    </div>
   </div>
   <div class="settings-sep"></div>
   <button class="settings-item" onclick="closeSettingsMenu(); exportData()" title="Export all data to a backup file"><span data-icon="download" data-icon-size="14"></span> Export data</button>
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v51</div>
+  <div class="app-version" title="App version">v52</div>
 </div>
 
 <div id="main">
