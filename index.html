@@ -191,7 +191,7 @@
   .task-item:hover + .subtask-list { background: var(--surface2); border-radius: 0 0 var(--radius) var(--radius); position: relative; z-index: 1; }
   .task-item:hover .task-controls { opacity: 1; }
   .task-item:hover .drag-handle { opacity: 1; }
-  .task-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius); transition: background 0.1s; position: relative; }
+  .task-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--radius); transition: background 0.1s; position: relative; }
   .drag-handle { cursor: grab; color: var(--text3); flex-shrink: 0; padding: 2px; opacity: 0; transition: opacity 0.15s; user-select: none; display: inline-flex; align-items: center; }
   .drag-handle:active { cursor: grabbing; }
   /* .dragging is SortableJS's chosenClass — applied to the row actually being
@@ -370,7 +370,7 @@
      an optional child <ul> of nested items. The row itself is the flex
      container — matches the main-list task-item + task-row pattern. */
   .shortlist-item { list-style: none; display: block; }
-  .shortlist-item-row { display: flex; align-items: flex-start; gap: 8px; padding: 5px 8px; border-radius: var(--radius); min-height: 30px; }
+  .shortlist-item-row { display: flex; align-items: flex-start; gap: 8px; padding: 4px 8px; border-radius: var(--radius); min-height: 28px; }
   .shortlist-item-row:hover { background: var(--surface2); }
   /* Vertically center the small fixed-size row controls against the FIRST
      line of a wrapping label. `align-items: flex-start` on the row keeps
@@ -598,7 +598,7 @@
 
     /* Task rows */
     .task-item { margin-bottom: 0; }
-    .task-row, .shortlist-item-row { min-height: 40px; padding: 0 4px 0 4px; gap: 4px; align-items: center; }
+    .task-row, .shortlist-item-row { min-height: 38px; padding: 0 4px 0 4px; gap: 4px; align-items: center; }
     .shortlist-item-row > .checkbox,
     .shortlist-item-row > .drag-handle,
     .shortlist-item-row > .star-toggle,
@@ -780,7 +780,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v53</div>
+  <div class="app-version" title="App version">v54</div>
 </div>
 
 <div id="main">
