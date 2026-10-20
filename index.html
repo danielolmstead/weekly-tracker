@@ -805,7 +805,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v64</div>
+  <div class="app-version" title="App version">v65</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -1084,9 +1084,14 @@ let tagModalTarget = null;
 // drag-state tracking needed here (SortableJS keeps its own internally).
 let pendingDeleteId = null;  // task id whose delete confirmation is currently showing
 
+// Counts local edits so a Drive push can tell whether anything changed while it was
+// uploading. `var` on purpose: save() can run during init, before the Drive section.
+var driveEditCounter = 0;
 function save() {
   state.lastModified = Date.now();
   localStorage.setItem('wt_state', JSON.stringify(state));
+  driveEditCounter++;
+  try { localStorage.setItem('wt_drive_dirty', '1'); } catch (e) {}
   driveQueueAutoSync();
 }
 function load() {
@@ -3108,6 +3113,10 @@ let driveConnectFlowActive = false;
 
 function driveGetFileId() { return localStorage.getItem('wt_drive_file_id') || null; }
 function driveSetFileId(id) { if (id) localStorage.setItem('wt_drive_file_id', id); else localStorage.removeItem('wt_drive_file_id'); }
+// "Dirty" = this device has changes Drive hasn't received yet. A missing flag counts
+// as dirty (the safe answer for devices that updated from an older version).
+function driveIsDirty() { return localStorage.getItem('wt_drive_dirty') !== '0'; }
+function driveClearDirty() { try { localStorage.setItem('wt_drive_dirty', '0'); } catch (e) {} }
 function driveGetLastRemoteModified() { return localStorage.getItem('wt_drive_last_remote_modified') || null; }
 function driveSetLastRemoteModified(iso) { if (iso) localStorage.setItem('wt_drive_last_remote_modified', iso); else localStorage.removeItem('wt_drive_last_remote_modified'); }
 
@@ -3386,6 +3395,7 @@ async function driveConnectFresh() {
     const meta = await driveCreateFile(JSON.stringify(state));
     driveSetFileId(meta.id);
     driveSetLastRemoteModified(meta.modifiedTime);
+    driveClearDirty();
     setDriveButton('Sync now', true, false);
     setDriveStatus('Connected — synced just now');
   } catch (e) {
@@ -3406,6 +3416,7 @@ async function driveConnectExisting() {
     driveSetFileId(fileId);
     driveApplyRemoteState(remoteState);
     driveSetLastRemoteModified(meta.modifiedTime);
+    driveClearDirty();
     setDriveButton('Sync now', true, false);
     setDriveStatus('Connected — loaded your synced data');
   } catch (e) {
@@ -3426,10 +3437,12 @@ function driveApplyRemoteState(remoteState) {
   }
 }
 
-// Manual "Sync now", and the background check right after reconnecting: reads
-// the remote file's timestamp first; if it's newer than the last version this
-// device knows about, another device saved more recently, so we ask before
-// overwriting anything. Otherwise this device's state is pushed up as-is.
+// Sync logic. We compare two things: did Drive change since this device last
+// synced (its timestamp differs from the one we remember), and did this device
+// change since then (the "dirty" flag set by save()).
+//   - only Drive changed  -> load Drive's version quietly, nothing to lose
+//   - only this device    -> push quietly
+//   - both changed        -> a real conflict, so (and only so) we ask
 async function driveSyncNow() {
   const fileId = driveGetFileId();
   if (!fileId || driveSyncInFlight) return;
@@ -3439,21 +3452,13 @@ async function driveSyncNow() {
   try {
     await driveEnsureToken(false);
     const meta = await driveGetFileMeta(fileId);
-    const lastKnown = driveGetLastRemoteModified();
-    if (meta.modifiedTime && lastKnown && meta.modifiedTime !== lastKnown) {
-      setDriveButton('Sync now', true, false);
-      setDriveStatus('Newer data found on Drive', 'error');
-      driveShowModal(
-        'Newer data on Drive',
-        'Another device saved changes to Drive more recently than this one. Load that version, or overwrite it with what\'s on this device?',
-        [
-          { label: 'Overwrite with this device', accent: false, onClick: () => drivePush(fileId) },
-          { label: 'Load Drive\'s version', accent: true, onClick: () => drivePull(fileId) }
-        ]
-      );
+    if (driveRemoteChanged(meta)) {
+      if (!driveIsDirty()) { await drivePull(fileId, true); return; }
+      driveShowConflict(fileId);
       return;
     }
-    await drivePush(fileId);
+    if (driveIsDirty()) await drivePush(fileId);
+    else { setDriveButton('Sync now', true, false); setDriveStatus('Synced just now'); }
   } catch (e) {
     setDriveButton('Sync now', true, false);
     setDriveStatus(e.message === 'drive-auth-expired' ? 'Reconnect needed' : 'Sync failed', 'error');
@@ -3462,19 +3467,39 @@ async function driveSyncNow() {
     driveSyncInFlight = false;
   }
 }
+function driveRemoteChanged(meta) {
+  const lastKnown = driveGetLastRemoteModified();
+  return !!(meta.modifiedTime && lastKnown && meta.modifiedTime !== lastKnown);
+}
+function driveShowConflict(fileId) {
+  if (document.getElementById('drive-modal').classList.contains('open')) return;
+  setDriveButton('Sync now', true, false);
+  setDriveStatus('Changes on two devices', 'error');
+  driveShowModal(
+    'Changes on two devices',
+    'This device and another one both changed things since they last synced. Keep this device\'s version, or load Drive\'s version? (The other one will be replaced.)',
+    [
+      { label: 'Keep this device\'s', accent: false, onClick: () => drivePush(fileId) },
+      { label: 'Load Drive\'s version', accent: true, onClick: () => drivePull(fileId) }
+    ]
+  );
+}
 async function drivePush(fileId) {
+  const editsAtStart = driveEditCounter;
   const meta = await driveUpdateFile(fileId, JSON.stringify(state));
   driveSetLastRemoteModified(meta.modifiedTime);
+  if (editsAtStart === driveEditCounter) driveClearDirty();  // edits made mid-upload stay dirty
   setDriveButton('Sync now', true, false);
   setDriveStatus('Synced just now');
 }
-async function drivePull(fileId) {
+async function drivePull(fileId, quiet) {
   const meta = await driveGetFileMeta(fileId);
   const remoteContent = await driveGetFileContent(fileId);
   driveApplyRemoteState(JSON.parse(remoteContent));
   driveSetLastRemoteModified(meta.modifiedTime);
+  driveClearDirty();
   setDriveButton('Sync now', true, false);
-  setDriveStatus('Loaded Drive\'s version');
+  setDriveStatus(quiet ? 'Updated from Drive' : 'Loaded Drive\'s version');
 }
 
 // Debounced auto-save: after any local change, wait for a pause, then push
@@ -3489,9 +3514,11 @@ function driveQueueAutoSync() {
     if (!fileId || driveSyncInFlight) return;
     try {
       await driveEnsureToken(false);
-      const meta = await driveUpdateFile(fileId, JSON.stringify(state));
-      driveSetLastRemoteModified(meta.modifiedTime);
-      setDriveStatus('Synced just now');
+      // Look before overwriting: if another device saved since we last synced,
+      // pushing now would erase its changes. Ask (a real two-device conflict).
+      const meta = await driveGetFileMeta(fileId);
+      if (driveRemoteChanged(meta)) { driveShowConflict(fileId); return; }
+      await drivePush(fileId);
     } catch (e) {
       // Local save already succeeded regardless — the next manual "Sync now"
       // or the next auto-save retries. No need to surface this one quietly.
@@ -3523,8 +3550,18 @@ function driveQueueAutoSync() {
   }
 })();
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') driveCheckExpiry();
+  if (document.visibilityState !== 'visible') return;
+  driveCheckExpiry();
+  // Coming back to the app: pick up changes made on another device (quietly, unless
+  // there's a real conflict). Throttled, and never while a field is being edited.
+  const ae = document.activeElement;
+  if (driveGetFileId() && driveTokenValid() && !driveSyncInFlight && !(ae && ae.isContentEditable)
+      && Date.now() - driveLastForegroundSync > 30000) {
+    driveLastForegroundSync = Date.now();
+    driveSyncNow();
+  }
 });
+var driveLastForegroundSync = 0;
 
 // ─── PWA ──────────────────────────────────────────────────────────────────────
 // Service worker + update check. A new deploy changes sw.js (its CACHE_NAME), and
