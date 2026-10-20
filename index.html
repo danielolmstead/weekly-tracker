@@ -655,8 +655,9 @@
     .task-note { font-size: calc(16px * var(--fs, 1)); padding: 8px 12px; min-height: 44px; line-height: 1.4; }
 
     /* Shortlist card */
-    /* Top padding 16px = the 16px side padding, so "New day" is as far from the card's top edge as from its right edge. */
-    .shortlist { padding: 16px 16px 8px; margin-bottom: 12px; }
+    /* Top padding 16px = the 16px side padding, so "New day" is as far from the card's top edge as from its right edge.
+       Bottom padding is 16px too, so the "Add task" box is equally far (17px with the border) from the card's left, right and bottom edges. */
+    .shortlist { padding: 16px 16px 16px; margin-bottom: 12px; }
     .shortlist-items { margin: 0 -8px; }
     .shortlist-header { font-size: calc(16px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
     .list-header { font-size: calc(16px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
@@ -805,7 +806,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v66</div>
+  <div class="app-version" title="App version">v67</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
