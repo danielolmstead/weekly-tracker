@@ -146,7 +146,7 @@
   /* iOS Safari zooms the page when a field under 16px gets focus, so on iPhones editable text never drops below 16px. */
   @supports (-webkit-touch-callout: none) {
     @media (max-width: 768px) {
-      html[data-fontsize="sm"] .task-label, html[data-fontsize="sm"] .subtask-list .task-label, html[data-fontsize="sm"] .shortlist-label,
+      html[data-fontsize="sm"] .task-label, html[data-fontsize="sm"] .subtask-list .task-label, html[data-fontsize="sm"] .shortlist-label, html[data-fontsize="sm"] .shortlist-header, html[data-fontsize="sm"] .list-header,
       html[data-fontsize="sm"] .task-note, html[data-fontsize="sm"] .week-modal-box input, html[data-fontsize="sm"] .tag-modal-box input,
       html[data-fontsize="sm"] #search-input { font-size: 16px; }
     }
@@ -337,11 +337,11 @@
      main checklist. Same underlying tasks; toggling done here toggles them
      everywhere. Hidden entirely (display:none via JS) when nothing's starred. */
   .shortlist { margin-bottom: 20px; padding: 14px 18px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
-  .shortlist-header { font-size: calc(11px * var(--fs, 1)); font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-  .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
+  .shortlist-header { font-size: calc(13.5px * var(--fs, 1)); font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .shortlist-header::before { content: ''; display: inline-block; width: 3px; height: 16px; background: var(--accent); border-radius: 2px; }
   /* "This Week" heading above the full list; same look as the Today header, accent bar. */
-  .list-header { font-size: calc(11px * var(--fs, 1)); font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
-  .list-header::before { content: ''; display: inline-block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
+  .list-header { font-size: calc(13.5px * var(--fs, 1)); font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+  .list-header::before { content: ''; display: inline-block; width: 3px; height: 16px; background: var(--accent); border-radius: 2px; }
   /* Root-level shortlist rows should land in the same horizontal spot as
      root-level main-checklist rows, so the two lists read as one aligned
      column. The card's own 18px side padding (see .shortlist above) would
@@ -658,8 +658,8 @@
     /* Top padding 16px = the 16px side padding, so "New day" is as far from the card's top edge as from its right edge. */
     .shortlist { padding: 16px 16px 8px; margin-bottom: 12px; }
     .shortlist-items { margin: 0 -8px; }
-    .shortlist-header { font-size: calc(13px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
-    .list-header { font-size: calc(13px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
+    .shortlist-header { font-size: calc(16px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
+    .list-header { font-size: calc(16px * var(--fs, 1)); margin-bottom: 0; min-height: 40px; }
     .crumb-line { padding: 2px 8px 0 4px; margin-bottom: -6px; font-size: calc(13px * var(--fs, 1)); }
     .add-root-btn { min-height: 48px; padding: 0 16px; gap: 12px; font-size: calc(16px * var(--fs, 1)); }
     .add-root-btn svg { width: 24px; height: 24px; }
@@ -805,7 +805,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v65</div>
+  <div class="app-version" title="App version">v66</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
