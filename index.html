@@ -806,7 +806,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v67</div>
+  <div class="app-version" title="App version">v69</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -2227,6 +2227,13 @@ function handleTaskKeydown(e, id) {
   if (e.key === 'Enter') {
     e.preventDefault();
     const label = e.target.textContent.trim();
+    // Enter on an empty nested task outdents it (like a bulleted list) instead of
+    // adding another empty sibling. At the top level it still adds a new task.
+    const w = currentWeek();
+    if (!label && w && findParent(w.tasks, id)) {
+      unindentTask(id, true);
+      return;
+    }
     updateLabel(id, label);
     addSiblingTask(id);
   } else if (e.key === 'Tab') {
