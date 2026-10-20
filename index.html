@@ -1446,9 +1446,18 @@ function setWeekSubtitle(range) {
 // The header drops a leading "Week of " to save room on small screens
 // (display only: the stored label and the sidebar still show the full text).
 function headerTitleFromLabel(label) {
-  const short = String(label || '').replace(/^\s*week of\s+/i, '').trim();
-  return short || label;
+  // The big header title now shows today's date (e.g. "Oct 20") instead of the week's label.
+  // The label is still used in the sidebar, search, and the edit dialog.
+  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+// Keep the header date current if the app stays open past midnight.
+function refreshHeaderDate() {
+  if (!state.currentWeekId) return;
+  const w = state.weeks.find(x => x.id === state.currentWeekId);
+  if (w) document.getElementById('week-title').textContent = headerTitleFromLabel(w.label);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshHeaderDate(); });
+setInterval(refreshHeaderDate, 60000);
 
 // Today as YYYY-MM-DD (in local time)
 function todayISO() {
