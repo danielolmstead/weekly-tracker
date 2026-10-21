@@ -310,6 +310,9 @@
      Hidden unless JS adds .show, which only happens on touch / narrow screens. */
   #kb-bar { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; height: 52px; box-sizing: border-box; align-items: center; gap: 2px; padding: 0 6px; background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
   #kb-bar.show { display: flex; }
+  /* While the bar is up, add bottom room (set by script: keyboard height + bar + margin)
+     so the last rows can be scrolled above the bar and keyboard. */
+  body.kb-open #content { padding-bottom: calc(var(--kb-pad, 0px) + 16px); }
   .kb-btn { width: 44px; height: 44px; flex: none; border: 0; border-radius: 10px; background: none; color: var(--text2); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .kb-btn svg { width: 22px; height: 22px; }
   .kb-btn.primary { background: var(--accent-bg); color: var(--accent); }
@@ -806,7 +809,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v69</div>
+  <div class="app-version" title="App version">v70</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -2044,6 +2047,8 @@ document.addEventListener('click', (e) => {
     if (!bar.classList.contains('show')) return;
     const lift = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
     bar.style.transform = lift ? `translateY(${-lift}px)` : '';
+    // Room under the list for the keyboard + bar, so the last rows can scroll clear of them.
+    document.documentElement.style.setProperty('--kb-pad', (lift + BAR_H) + 'px');
   }
   function updateButtons() {
     const w = currentWeek();
@@ -2052,13 +2057,33 @@ document.addEventListener('click', (e) => {
     document.getElementById('kb-indent').disabled = !info || info.index === 0;
     document.getElementById('kb-outdent').disabled = !findParent(w.tasks, taskId);
   }
-  // Keep the edited row from hiding underneath the bar.
+  // Keep the line being edited from hiding underneath the bar. Uses the caret's own
+  // line (a wrapped label can be several lines tall), not the whole label's bottom edge.
+  function caretBottom(el) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount && el.contains(sel.anchorNode)) {
+      const r = sel.getRangeAt(0).cloneRange();
+      r.collapse(false);
+      let rect = r.getClientRects()[0];
+      if (!rect || (!rect.height && !rect.bottom)) rect = r.getBoundingClientRect();
+      if (rect && rect.bottom) return rect.bottom;
+    }
+    return el.getBoundingClientRect().bottom;
+  }
   function keepVisible() {
     const el = activeLabel();
-    if (!el || !vv) return;
-    const bottom = el.getBoundingClientRect().bottom;
-    const limit = vv.offsetTop + vv.height - BAR_H - 8;
-    if (bottom > limit) window.scrollBy(0, bottom - limit);
+    if (!el || !vv || !bar.classList.contains('show')) return;
+    const limit = vv.offsetTop + vv.height - BAR_H - 12;
+    const over = caretBottom(el) - limit;
+    if (over > 0) {
+      const before = caretBottom(el);
+      window.scrollBy(0, over);
+      // If the window didn't move, the list itself is the scroller.
+      if (Math.abs(caretBottom(el) - before) < 1) {
+        const c = document.getElementById('content');
+        if (c) c.scrollTop += over;
+      }
+    }
   }
   function show(el) {
     clearTimeout(hideTimer);
@@ -2069,12 +2094,14 @@ document.addEventListener('click', (e) => {
     // from the week entirely, and its confirm popover lives in the main list.
     document.getElementById('kb-delete').hidden = el.classList.contains('shortlist-label');
     bar.classList.add('show');
+    document.body.classList.add('kb-open');
     position();
     updateButtons();
     keepVisible();
   }
   function hide() {
     bar.classList.remove('show');
+    document.body.classList.remove('kb-open');
     bar.style.transform = '';
     taskId = null;
   }
@@ -2090,6 +2117,8 @@ document.addEventListener('click', (e) => {
     // beat and only hide if focus really left the labels.
     hideTimer = setTimeout(() => { if (!activeLabel()) hide(); }, 120);
   });
+  document.addEventListener('input', () => { if (bar.classList.contains('show')) keepVisible(); });
+  document.addEventListener('selectionchange', () => { if (bar.classList.contains('show')) keepVisible(); });
   if (vv) {
     vv.addEventListener('resize', () => { position(); keepVisible(); });
     vv.addEventListener('scroll', position);
