@@ -82,6 +82,31 @@
     #header { align-content: center; }
   }
   .app-name { font-size: calc(13px * var(--fs, 1)); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); font-family: var(--mono); }
+  /* WORKSPACE SWITCHER: sits where the app name used to be. Negative margins keep the row as tall as
+     the old app-name line, so the sidebar header still lines up with the main header on desktop. */
+  .ws-switch { position: relative; }
+  .ws-trigger, .ws-item, .ws-item-btn, .ws-new, .search-scope { -webkit-tap-highlight-color: transparent; }
+  .ws-trigger { display: flex; width: fit-content; align-items: center; gap: 4px; max-width: 100%; background: none; border: none; padding: 2px 6px; margin: -2px 0 -2px -6px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-family: var(--mono); font-size: calc(13px * var(--fs, 1)); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; transition: background 0.15s, color 0.15s; }
+  .ws-trigger:hover, .ws-trigger.open { background: var(--surface2); color: var(--text); }
+  .ws-trigger-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ws-trigger svg { flex-shrink: 0; }
+  .ws-menu { position: absolute; top: calc(100% + 8px); left: -8px; right: -8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 4px; z-index: 60; max-height: 60vh; overflow-y: auto; display: none; }
+  .ws-menu.open { display: block; }
+  .ws-item { display: flex; align-items: center; gap: 4px; padding: 6px 4px 6px 10px; border-radius: 4px; cursor: pointer; font-size: calc(12px * var(--fs, 1)); color: var(--text); }
+  .ws-item:hover { background: var(--surface2); }
+  .ws-item.active { background: var(--accent-bg); color: var(--accent); }
+  .ws-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .ws-item-count { font-size: calc(10px * var(--fs, 1)); color: var(--text3); font-family: var(--mono); margin-right: 2px; flex-shrink: 0; }
+  .ws-item.active .ws-item-count { color: var(--accent); opacity: 0.7; }
+  .ws-item-btn { background: none; border: none; padding: 4px; border-radius: 4px; cursor: pointer; color: var(--text3); display: inline-flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s, background 0.15s; flex-shrink: 0; }
+  .ws-item:hover .ws-item-btn, .ws-item-btn:focus-visible { opacity: 1; }
+  .ws-item-btn:hover { background: var(--border); color: var(--text); }
+  .ws-item-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
+  .ws-sep { height: 1px; background: var(--border); margin: 4px 0; }
+  .ws-new { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 10px; background: none; border: none; border-radius: 4px; cursor: pointer; color: var(--text2); font-size: calc(12px * var(--fs, 1)); font-family: var(--font); font-weight: 500; text-align: left; }
+  .ws-new:hover { background: var(--surface2); color: var(--text); }
+  .search-scope { flex-shrink: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(11px * var(--fs, 1)); font-family: var(--mono); padding: 3px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface2); color: var(--text2); cursor: pointer; }
+  .search-scope:hover { color: var(--text); border-color: var(--accent); }
   .sidebar-actions { display: flex; gap: 6px; margin-top: 12px; }
   .sidebar-actions button { flex: 1; font-size: calc(12px * var(--fs, 1)); padding: 6px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
   .sidebar-actions button:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
@@ -476,8 +501,8 @@
   .shortlist-items:empty + .shortlist-add { margin-top: 0; }
 
   /* WEEK MODAL */
-  #week-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
-  #week-modal.open { display: flex; }
+  #week-modal, #ws-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  #week-modal.open, #ws-modal.open { display: flex; }
   .week-modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 28px; width: 360px; max-width: 100%; max-height: 100%; overflow-y: auto; box-shadow: var(--shadow-md); }
   /* Date inputs have a built-in minimum width (wider on iOS Safari); let them
      shrink with the row instead of pushing the dialog past the screen edge. */
@@ -686,6 +711,14 @@
     .week-item-menu-btn { opacity: 1; width: 40px; height: 40px; padding: 0; justify-content: center; }
     .week-item-menu-btn svg { width: 20px; height: 20px; }
     .week-menu-popover { min-width: 180px; padding: 8px 0; }
+    /* Workspace switcher on phones: 40px tap target level with the gear, 48px menu rows. */
+    .ws-trigger { min-height: 40px; padding: 0 6px; margin: -12px 0 -12px -6px; max-width: calc(100% - 52px); font-size: calc(14px * var(--fs, 1)); }
+    .ws-item { min-height: 48px; padding: 0 4px 0 16px; font-size: calc(16px * var(--fs, 1)); }
+    .ws-item-count { font-size: calc(12px * var(--fs, 1)); }
+    .ws-item-btn { opacity: 1; width: 40px; height: 40px; padding: 0; }
+    .ws-item-btn svg { width: 20px; height: 20px; }
+    .ws-new { min-height: 48px; padding: 0 16px; font-size: calc(16px * var(--fs, 1)); }
+    .search-scope { min-height: 32px; font-size: calc(12px * var(--fs, 1)); padding: 0 10px; }
     .week-menu-item { min-height: 48px; padding: 0 16px; font-size: calc(16px * var(--fs, 1)); border-radius: 0; display: flex; align-items: center; }
     .drive-status { font-size: calc(12px * var(--fs, 1)); }
     .settings-btn svg, .settings-item svg { width: 20px; height: 20px; }
@@ -745,7 +778,14 @@
 
 <nav id="sidebar">
   <div class="sidebar-top">
-    <div class="app-name">This Week</div>
+    <!-- Workspace switcher: takes the place of the app name. The first workspace is called "This Week". -->
+    <div class="ws-switch">
+      <button class="ws-trigger" id="ws-trigger" onclick="toggleWsMenu(event)" aria-haspopup="true" aria-expanded="false" title="Switch workspace">
+        <span class="ws-trigger-name" id="ws-trigger-name">This Week</span>
+        <span data-icon="chevron-down" data-icon-size="14"></span>
+      </button>
+      <div class="ws-menu" id="ws-menu" role="menu" onclick="event.stopPropagation()"></div>
+    </div>
     <div class="sidebar-actions">
       <button onclick="openNewWeekModal()"><span data-icon="plus" data-icon-size="12"></span> New Week</button>
     </div>
@@ -809,7 +849,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v71</div>
+  <div class="app-version" title="App version">v72</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -882,12 +922,26 @@
   </div>
 </div>
 
+<!-- WORKSPACE MODAL (new / rename) -->
+<div id="ws-modal">
+  <div class="week-modal-box">
+    <button class="modal-x" onclick="closeWsModal()" title="Close" aria-label="Close"><span data-icon="x" data-icon-size="18"></span></button>
+    <h2 id="ws-modal-title">New workspace</h2>
+    <label for="ws-name-input">Name (e.g. Work, Home)</label>
+    <input type="text" id="ws-name-input" maxlength="40" autocomplete="off" placeholder="Work" onkeydown="if (event.key === 'Enter') { event.preventDefault(); saveWsModal(); }" />
+    <div class="modal-btns">
+      <button class="btn btn-accent" id="ws-modal-save-btn" onclick="saveWsModal()">Create</button>
+    </div>
+  </div>
+</div>
+
 <!-- SEARCH MODAL -->
 <div id="search-modal">
   <div class="search-modal-box">
     <div class="search-input-row">
       <span class="search-input-icon" data-icon="search" data-icon-size="15"></span>
       <input type="search" id="search-input" placeholder="Search tasks, notes, and tags across all weeks…" autocomplete="off" oninput="runSearch(this.value)" />
+      <button type="button" class="search-scope" id="search-scope" onclick="toggleSearchScope()" style="display:none;"></button>
       <kbd class="search-kbd">esc</kbd>
     </div>
     <div class="search-results" id="search-results">
@@ -1081,7 +1135,50 @@ function toggleSettingsMenu(e) {
 }
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
-let state = { weeks: [], currentWeekId: null };
+// Stored shape (version 2): { version, workspaces: [{ id, name, weeks, currentWeekId }], currentWorkspaceId, lastModified }.
+// The rest of the app still says state.weeks / state.currentWeekId: those are accessors that read and
+// write the ACTIVE workspace (non-enumerable, so JSON.stringify leaves them out). Anything that swaps in a
+// whole new state (load, import, Drive pull) must go through adoptState(), which also migrates the old
+// pre-workspaces shape ({ weeks, currentWeekId }) into a single workspace.
+const STATE_VERSION = 2;
+const DEFAULT_WORKSPACE_NAME = 'This Week';
+function adoptState(raw) {
+  if (!raw || typeof raw !== 'object') raw = {};
+  if (typeof raw.version === 'number' && raw.version > STATE_VERSION) {
+    const err = new Error('This data is from a newer version of This Week. Reload the app to update.');
+    err.code = 'newer-version';
+    throw err;
+  }
+  let s;
+  if (Array.isArray(raw.workspaces)) {
+    s = raw;
+  } else {
+    const id = uid();
+    s = {
+      workspaces: [{ id, name: DEFAULT_WORKSPACE_NAME, weeks: Array.isArray(raw.weeks) ? raw.weeks : [], currentWeekId: raw.currentWeekId || null }],
+      currentWorkspaceId: id
+    };
+    if (raw.lastModified) s.lastModified = raw.lastModified;
+  }
+  s.version = STATE_VERSION;
+  if (!s.workspaces.length) s.workspaces.push({ id: uid(), name: DEFAULT_WORKSPACE_NAME, weeks: [], currentWeekId: null });
+  s.workspaces.forEach(ws => {
+    if (!ws.id) ws.id = uid();
+    if (!ws.name) ws.name = DEFAULT_WORKSPACE_NAME;
+    if (!Array.isArray(ws.weeks)) ws.weeks = [];
+    if (ws.currentWeekId === undefined) ws.currentWeekId = null;
+  });
+  if (!s.workspaces.some(ws => ws.id === s.currentWorkspaceId)) s.currentWorkspaceId = s.workspaces[0].id;
+  const active = () => s.workspaces.find(ws => ws.id === s.currentWorkspaceId) || s.workspaces[0];
+  Object.defineProperties(s, {
+    weeks: { get: () => active().weeks, set: v => { active().weeks = v; }, enumerable: false, configurable: true },
+    currentWeekId: { get: () => active().currentWeekId, set: v => { active().currentWeekId = v; }, enumerable: false, configurable: true }
+  });
+  return s;
+}
+let state = adoptState({});
+// var (hoisted): set when saved data came from a newer app version; save() then refuses to overwrite it.
+var stateLocked = false;
 let tagModalTarget = null;
 // Drag-and-drop reordering (main checklist + shortlist) is owned by SortableJS
 // instances created in initTaskSortable()/initShortlistSortable() — no manual
@@ -1092,6 +1189,7 @@ let pendingDeleteId = null;  // task id whose delete confirmation is currently s
 // uploading. `var` on purpose: save() can run during init, before the Drive section.
 var driveEditCounter = 0;
 function save() {
+  if (stateLocked) return;
   state.lastModified = Date.now();
   localStorage.setItem('wt_state', JSON.stringify(state));
   driveEditCounter++;
@@ -1100,7 +1198,21 @@ function save() {
 }
 function load() {
   const raw = localStorage.getItem('wt_state');
-  if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
+  if (!raw) return;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { return; }
+  const needsMigration = !!parsed && typeof parsed === 'object' && !Array.isArray(parsed.workspaces);
+  // One-time safety copy of the pre-workspaces data, kept in case anything goes wrong with the migration.
+  if (needsMigration) { try { if (!localStorage.getItem('wt_state_v1_backup')) localStorage.setItem('wt_state_v1_backup', raw); } catch (e) {} }
+  try {
+    state = adoptState(parsed);
+  } catch (e) {
+    stateLocked = true;
+    alert(e.message || 'Could not read the saved data.');
+    return;
+  }
+  // Store the migrated shape right away (not an edit, so it does not mark Drive as dirty).
+  if (needsMigration) { try { localStorage.setItem('wt_state', JSON.stringify(state)); } catch (e) {} }
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
@@ -1155,6 +1267,7 @@ applyFont(currentFont);
 applyFontSize(currentFontSize);
 applyDensity(currentDensity);
 updateDarkBtn();
+renderWorkspaceSwitcher();
 renderSidebar();
 if (state.currentWeekId) {
   const w = state.weeks.find(w => w.id === state.currentWeekId);
@@ -1183,11 +1296,32 @@ function updateDarkBtn() {
 }
 
 // ─── SEARCH ──────────────────────────────────────────────────────────────────
+// Search covers the current workspace by default; with more than one workspace a small pill in the
+// search box switches it to all workspaces.
+var searchAllWorkspaces = false;
+function updateSearchScopeBtn() {
+  const btn = document.getElementById('search-scope');
+  if (!btn) return;
+  const multi = state.workspaces.length > 1;
+  btn.style.display = multi ? '' : 'none';
+  btn.textContent = searchAllWorkspaces ? 'All workspaces' : currentWorkspace().name + ' only';
+  btn.title = searchAllWorkspaces ? 'Searching every workspace. Click to search only this one.' : 'Searching this workspace. Click to search every workspace.';
+}
+function toggleSearchScope() {
+  searchAllWorkspaces = !searchAllWorkspaces;
+  updateSearchScopeBtn();
+  runSearch(document.getElementById('search-input').value);
+  document.getElementById('search-input').focus();
+}
+
 function openSearchModal() {
   // Close other popovers/menus if they happen to be open
   closeAllWeekMenus();
+  closeWsMenu();
   closeSettingsMenu();
 
+  searchAllWorkspaces = false;
+  updateSearchScopeBtn();
   const input = document.getElementById('search-input');
   input.value = '';
   document.getElementById('search-results').innerHTML = '<div class="search-empty">Type to search across all weeks…</div>';
@@ -1212,7 +1346,9 @@ function runSearch(query) {
   }
 
   const allResults = [];
-  state.weeks.forEach(week => {
+  const wsList = searchAllWorkspaces ? state.workspaces : [currentWorkspace()];
+  const showWsName = searchAllWorkspaces && state.workspaces.length > 1;
+  wsList.forEach(ws => ws.weeks.forEach(week => {
     const weekMatches = [];
     function walk(tasks, parents) {
       tasks.forEach(task => {
@@ -1227,24 +1363,24 @@ function runSearch(query) {
       });
     }
     walk(week.tasks, []);
-    if (weekMatches.length > 0) allResults.push({ week, matches: weekMatches });
-  });
+    if (weekMatches.length > 0) allResults.push({ ws, week, matches: weekMatches });
+  }));
 
   if (allResults.length === 0) {
     resultsEl.innerHTML = '<div class="search-no-results">No matches for &ldquo;' + esc(query) + '&rdquo;.</div>';
     return;
   }
 
-  resultsEl.innerHTML = allResults.map(({ week, matches }) => {
+  resultsEl.innerHTML = allResults.map(({ ws, week, matches }) => {
     const countLabel = matches.length + ' match' + (matches.length === 1 ? '' : 'es');
     return `<div class="search-week-group">
-      <div class="search-week-label">${esc(week.label)} · ${countLabel}</div>
+      <div class="search-week-label">${showWsName ? esc(ws.name) + ' › ' : ''}${esc(week.label)} · ${countLabel}</div>
       ${matches.map(m => {
         const crumb = m.parents.length > 0
           ? m.parents.map(p => esc(p.label)).join(' › ')
           : '';
         const showNote = m.task.note && (m.matched.includes('note') || m.matched.includes('label') || m.matched.includes('tag'));
-        return `<div class="search-result-item" onclick="navigateToTask('${week.id}', '${m.task.id}')">
+        return `<div class="search-result-item" onclick="navigateToTask('${week.id}', '${m.task.id}', '${ws.id}')">
           ${crumb ? `<div class="search-breadcrumb">${crumb}</div>` : ''}
           <div class="search-task-label ${m.task.done ? 'done' : ''}">${highlightMatch(m.task.label, query)}</div>
           ${showNote ? `<div class="search-task-note">${highlightMatch(m.task.note, query)}</div>` : ''}
@@ -1280,8 +1416,13 @@ function highlightMatch(text, query) {
 // Jump to the week and task that the user clicked in search results.
 // Scrolls the task into view and gives it a subtle theme-colored highlight
 // that lingers until they engage with the checklist (any edit/toggle clears it).
-function navigateToTask(weekId, taskId) {
+function navigateToTask(weekId, taskId, wsId) {
   closeSearchModal();
+  // A result from another workspace: make that workspace active first (the week select below does the rest).
+  if (wsId && wsId !== state.currentWorkspaceId && state.workspaces.some(ws => ws.id === wsId)) {
+    state.currentWorkspaceId = wsId;
+    renderWorkspaceSwitcher();
+  }
   selectWeek(weekId);
   setTimeout(() => {
     // The target might be inside one or more collapsed parents. Walk up the
@@ -1302,7 +1443,7 @@ function navigateToTask(weekId, taskId) {
 function exportData() {
   const payload = {
     app: 'weekly-tracker',
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     state: state,
     dark: document.body.classList.contains('dark'),
@@ -1336,29 +1477,56 @@ function importData(event) {
       return;
     }
     // Validate shape: support both new format (with state wrapper) and direct state objects
-    let importedState = null;
+    let importedRaw = null;
     let importedDark = null;
-    if (data && data.state && Array.isArray(data.state.weeks)) {
-      importedState = data.state;
+    const hasShape = o => !!o && (Array.isArray(o.workspaces) || Array.isArray(o.weeks));
+    if (data && hasShape(data.state)) {
+      importedRaw = data.state;
       if (typeof data.dark === 'boolean') importedDark = data.dark;
-    } else if (data && Array.isArray(data.weeks)) {
+    } else if (hasShape(data)) {
       // Allow direct state JSON too
-      importedState = data;
+      importedRaw = data;
     } else {
       alert('That file doesn\'t look like a This Week backup. Make sure you exported it from this app.');
       input.value = '';
       return;
     }
 
-    const newCount = importedState.weeks.length;
-    const existingCount = state.weeks.length;
-    let msg = `Import ${newCount} week${newCount === 1 ? '' : 's'} from this backup?`;
-    if (existingCount > 0) {
-      msg += `\n\nThis will REPLACE your current data (${existingCount} week${existingCount === 1 ? '' : 's'} on this device). This cannot be undone — make sure you've exported a backup first if you want to keep it.`;
+    // adoptState also converts an older backup (a plain list of weeks) into one workspace.
+    let imported;
+    try {
+      imported = adoptState(JSON.parse(JSON.stringify(importedRaw)));
+    } catch (err) {
+      alert(err.message || 'Could not read that backup.');
+      input.value = '';
+      return;
+    }
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    const oldFormat = !Array.isArray(importedRaw.workspaces);
+    let msg;
+    if (oldFormat) {
+      // Older backups have no workspaces: they replace the weeks of the workspace you are in, nothing else.
+      const here = currentWorkspace();
+      msg = `Import ${plural(imported.weeks.length, 'week')} from this backup into the workspace "${here.name}"?`;
+      if (here.weeks.length > 0) {
+        msg += `\n\nThis will REPLACE the ${plural(here.weeks.length, 'week')} in "${here.name}". Your other workspaces are not touched. This cannot be undone — export a backup first if you want to keep it.`;
+      }
+    } else {
+      const newWeeks = imported.workspaces.reduce((n, ws) => n + ws.weeks.length, 0);
+      const oldWeeks = state.workspaces.reduce((n, ws) => n + ws.weeks.length, 0);
+      msg = `Import ${plural(imported.workspaces.length, 'workspace')} (${plural(newWeeks, 'week')}) from this backup?`;
+      if (oldWeeks > 0) {
+        msg += `\n\nThis will REPLACE all your current data (${plural(state.workspaces.length, 'workspace')}, ${plural(oldWeeks, 'week')} on this device). This cannot be undone — make sure you've exported a backup first if you want to keep it.`;
+      }
     }
     if (!confirm(msg)) { input.value = ''; return; }
 
-    state = importedState;
+    if (oldFormat) {
+      state.weeks = imported.weeks;
+      state.currentWeekId = imported.currentWeekId;
+    } else {
+      state = imported;
+    }
     save();
 
     if (importedDark !== null) {
@@ -1374,6 +1542,7 @@ function importData(event) {
       applyTheme(currentTheme);
     }
 
+    renderWorkspaceSwitcher();
     renderSidebar();
     const current = state.currentWeekId && state.weeks.find(w => w.id === state.currentWeekId);
     if (current) selectWeek(current.id, false);
@@ -1590,11 +1759,137 @@ function closeAllWeekMenus() {
 // Close menus when clicking outside
 document.addEventListener('click', () => {
   closeAllWeekMenus();
+  closeWsMenu();
   closeSettingsMenu();
 });
 
+// ─── WORKSPACES ──────────────────────────────────────────────────────────────
+// Each workspace is its own set of weeks (work, home, ...). The switcher is the name at the top of the
+// sidebar; its menu lists every workspace with rename / delete, plus "New workspace".
+var editingWsId = null; // null = creating, otherwise renaming that workspace
+function currentWorkspace() { return state.workspaces.find(ws => ws.id === state.currentWorkspaceId) || state.workspaces[0]; }
+
+function renderWorkspaceSwitcher() {
+  const nameEl = document.getElementById('ws-trigger-name');
+  if (nameEl) nameEl.textContent = currentWorkspace().name;
+  const menu = document.getElementById('ws-menu');
+  if (!menu) return;
+  const many = state.workspaces.length > 1;
+  menu.innerHTML = state.workspaces.map(ws => `
+    <div class="ws-item ${ws.id === state.currentWorkspaceId ? 'active' : ''}" role="menuitem" onclick="switchWorkspace('${ws.id}')">
+      <span class="ws-item-name">${esc(ws.name)}</span>
+      <span class="ws-item-count" title="Weeks in this workspace">${ws.weeks.length}</span>
+      <button class="ws-item-btn" title="Rename" aria-label="Rename workspace" onclick="openWsModal('${ws.id}', event)">${icon('pencil', 14)}</button>
+      ${many ? `<button class="ws-item-btn danger" title="Delete" aria-label="Delete workspace" onclick="deleteWorkspace('${ws.id}', event)">${icon('trash', 14)}</button>` : ''}
+    </div>`).join('') + `
+    <div class="ws-sep"></div>
+    <button class="ws-new" onclick="openWsModal(null, event)">${icon('plus', 14)} New workspace</button>`;
+}
+
+function toggleWsMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('ws-menu');
+  const trigger = document.getElementById('ws-trigger');
+  const opening = !menu.classList.contains('open');
+  closeAllWeekMenus();
+  closeSettingsMenu();
+  menu.classList.toggle('open', opening);
+  trigger.classList.toggle('open', opening);
+  trigger.setAttribute('aria-expanded', opening ? 'true' : 'false');
+}
+function closeWsMenu() {
+  const menu = document.getElementById('ws-menu');
+  const trigger = document.getElementById('ws-trigger');
+  if (menu) menu.classList.remove('open');
+  if (trigger) { trigger.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); }
+}
+
+// Show whichever workspace is now active: its week list, and its current (or first) week.
+function afterWorkspaceChange() {
+  pendingDeleteId = null;
+  closeAllWeekMenus();
+  renderWorkspaceSwitcher();
+  const ws = currentWorkspace();
+  const w = ws.weeks.find(x => x.id === ws.currentWeekId) || ws.weeks[0];
+  if (w) {
+    selectWeek(w.id, false, true); // keepDrawer: on a phone, stay in the drawer so the week list is visible
+  } else {
+    state.currentWeekId = null;
+    renderSidebar();
+    showEmpty();
+  }
+}
+
+function switchWorkspace(id) {
+  closeWsMenu();
+  if (id === state.currentWorkspaceId || !state.workspaces.some(ws => ws.id === id)) return;
+  state.currentWorkspaceId = id;
+  save();
+  afterWorkspaceChange();
+}
+
+function openWsModal(id, e) {
+  if (e) e.stopPropagation();
+  closeWsMenu();
+  editingWsId = id;
+  const ws = id ? state.workspaces.find(x => x.id === id) : null;
+  document.getElementById('ws-modal-title').textContent = ws ? 'Rename workspace' : 'New workspace';
+  document.getElementById('ws-modal-save-btn').textContent = ws ? 'Save' : 'Create';
+  document.getElementById('ws-name-input').value = ws ? ws.name : '';
+  document.getElementById('ws-modal').classList.add('open');
+  setTimeout(() => document.getElementById('ws-name-input').select(), 50);
+}
+function closeWsModal() {
+  document.getElementById('ws-modal').classList.remove('open');
+  editingWsId = null;
+}
+function saveWsModal() {
+  const name = document.getElementById('ws-name-input').value.trim() || 'Untitled';
+  if (editingWsId) {
+    const ws = state.workspaces.find(x => x.id === editingWsId);
+    if (ws) ws.name = name;
+    save();
+    closeWsModal();
+    renderWorkspaceSwitcher();
+    updateSearchScopeBtn();
+  } else {
+    const ws = { id: uid(), name, weeks: [], currentWeekId: null };
+    state.workspaces.push(ws);
+    state.currentWorkspaceId = ws.id;
+    save();
+    closeWsModal();
+    afterWorkspaceChange();
+  }
+}
+
+function deleteWorkspace(id, e) {
+  if (e) e.stopPropagation();
+  closeWsMenu();
+  if (state.workspaces.length <= 1) return; // always keep one
+  const ws = state.workspaces.find(x => x.id === id);
+  if (!ws) return;
+  const n = ws.weeks.length;
+  driveShowModal(
+    'Delete "' + ws.name + '"?',
+    n === 0
+      ? 'This workspace has no weeks. It will be removed.'
+      : `This permanently deletes the workspace and its ${n} week${n === 1 ? '' : 's'}, with all their tasks. This cannot be undone.`,
+    [{ label: 'Delete workspace', danger: true, onClick: () => confirmDeleteWorkspace(id) }]
+  );
+}
+function confirmDeleteWorkspace(id) {
+  if (state.workspaces.length <= 1) return;
+  const wasCurrent = id === state.currentWorkspaceId;
+  state.workspaces = state.workspaces.filter(x => x.id !== id);
+  if (wasCurrent) state.currentWorkspaceId = state.workspaces[0].id;
+  save();
+  if (wasCurrent) afterWorkspaceChange();
+  else renderWorkspaceSwitcher();
+}
+
 function showEmpty() {
   document.getElementById('empty-state').style.display = '';
+  document.getElementById('shortlist').style.display = 'none';
   document.getElementById('checklist').style.display = 'none';
   document.getElementById('week-list-header').style.display = 'none';
   document.getElementById('add-root-btn').style.display = 'none';
@@ -1602,12 +1897,12 @@ function showEmpty() {
   setWeekSubtitle('');
 }
 
-function selectWeek(id, doSave = true) {
+function selectWeek(id, doSave = true, keepDrawer = false) {
   state.currentWeekId = id;
   if (doSave) save();
   renderSidebar();
   const week = state.weeks.find(w => w.id === id);
-  closeSidebarMobile(); // on mobile the sidebar is an overlay drawer; picking a week should dismiss it
+  if (!keepDrawer) closeSidebarMobile(); // on mobile the sidebar is an overlay drawer; picking a week should dismiss it
   if (!week) return;
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('checklist').style.display = '';
@@ -3151,6 +3446,8 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'Escape') {
     closeWeekModal();
+    closeWsModal();
+    closeWsMenu();
     closeTagModal();
     closeSearchModal();
     closeSettingsMenu();
@@ -3380,6 +3677,7 @@ function driveShowModal(title, text, buttons) {
   buttons.forEach(b => {
     const el = document.createElement('button');
     el.className = 'btn' + (b.accent ? ' btn-accent' : '');
+    if (b.danger) el.style.cssText = 'background:var(--danger);border-color:var(--danger);color:#fff;';
     el.textContent = b.label;
     el.onclick = () => { driveCloseModal(); b.onClick(); };
     btnRow.appendChild(el);
@@ -3494,8 +3792,8 @@ async function driveConnectExisting() {
     const remoteContent = await driveGetFileContent(fileId);
     let remoteState;
     try { remoteState = JSON.parse(remoteContent); } catch (e) { throw new Error('That file isn\'t This Week data'); }
+    driveApplyRemoteState(remoteState);  // may throw (e.g. data from a newer version): do not save the file id first
     driveSetFileId(fileId);
-    driveApplyRemoteState(remoteState);
     driveSetLastRemoteModified(meta.modifiedTime);
     driveClearDirty();
     setDriveButton('Sync now', true, false);
@@ -3507,15 +3805,16 @@ async function driveConnectExisting() {
 }
 
 function driveApplyRemoteState(remoteState) {
-  state = remoteState;
+  // adoptState throws (before anything is replaced) if the file is from a newer app version, and
+  // converts a file saved before workspaces existed into a single workspace.
+  state = adoptState(remoteState);
+  stateLocked = false;
   localStorage.setItem('wt_state', JSON.stringify(state));
+  renderWorkspaceSwitcher();
   renderSidebar();
-  if (state.currentWeekId) {
-    const w = state.weeks.find(w => w.id === state.currentWeekId);
-    if (w) selectWeek(w.id, false);
-  } else {
-    document.getElementById('empty-state').style.display = '';
-  }
+  const w = state.currentWeekId && state.weeks.find(w => w.id === state.currentWeekId);
+  if (w) selectWeek(w.id, false);
+  else showEmpty();
 }
 
 // Sync logic. We compare two things: did Drive change since this device last
@@ -3542,7 +3841,7 @@ async function driveSyncNow() {
     else { setDriveButton('Sync now', true, false); setDriveStatus('Synced just now'); }
   } catch (e) {
     setDriveButton('Sync now', true, false);
-    setDriveStatus(e.message === 'drive-auth-expired' ? 'Reconnect needed' : 'Sync failed', 'error');
+    setDriveStatus(e.message === 'drive-auth-expired' ? 'Reconnect needed' : (e.code === 'newer-version' ? 'Update the app to sync' : 'Sync failed'), 'error');
     if (e.message === 'drive-auth-expired') driveArmTapReconnect();
   } finally {
     driveSyncInFlight = false;
