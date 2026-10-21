@@ -809,7 +809,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v70</div>
+  <div class="app-version" title="App version">v71</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -1794,6 +1794,20 @@ function syncParents(tasks, id) {
   return false;
 }
 
+// A parent is checked exactly when it has subtasks and all of them are checked.
+// Call this after a task's list of subtasks changes (one added, removed, moved):
+// it re-derives the done state of that task itself (if it still has subtasks) and
+// of all its ancestors. So adding an unchecked subtask to a checked parent unchecks
+// it, and removing the last unchecked subtask checks it. A task left with no
+// subtasks at all keeps whatever state it had.
+function syncDoneFrom(tasks, id) {
+  if (!id) return;
+  const t = findTask(tasks, id);
+  if (!t) return;
+  if (t.children && t.children.length) t.done = t.children.every(c => c.done);
+  syncParents(tasks, id);
+}
+
 // ─── PROGRESS ────────────────────────────────────────────────────────────────
 function updateProgress() {
   const w = currentWeek();
@@ -1854,6 +1868,7 @@ function addChildTask(parentId) {
   if (!parent.children) parent.children = [];
   const t = newTask('');
   parent.children.push(t);
+  syncDoneFrom(w.tasks, parentId); // the new subtask is unchecked, so a checked parent becomes unchecked
   save();
   renderChecklist();
   updateProgress();
@@ -1899,7 +1914,9 @@ function deleteTask(id) {
 function confirmDelete(id) {
   const w = currentWeek(); if (!w) return;
   pendingDeleteId = null;
+  const delParent = findParent(w.tasks, id);
   removeTask(w.tasks, id);
+  if (delParent) syncDoneFrom(w.tasks, delParent.id); // last unchecked subtask gone -> parent becomes checked
   save();
   renderChecklist();
   updateProgress();
@@ -2354,6 +2371,8 @@ function addSiblingTask(id) {
   // New tasks start with an empty label (a faint CSS placeholder shows until typed).
   const t = newTask('');
   info.list.splice(info.index + 1, 0, t);
+  const sibParent = findParent(w.tasks, id);
+  if (sibParent) syncDoneFrom(w.tasks, sibParent.id); // new unchecked sibling unchecks a checked parent
   save();
   renderChecklist();
   updateProgress();
@@ -2447,11 +2466,15 @@ function indentTask(id, syncFocus) {
   const info = findListContaining(w.tasks, id);
   if (!info || info.index === 0) return; // no previous sibling
   const prevSibling = info.list[info.index - 1];
+  const oldParent = findParent(w.tasks, id);
   const [task] = info.list.splice(info.index, 1);
   if (!prevSibling.children) prevSibling.children = [];
   prevSibling.children.push(task);
   // Auto-expand the new parent so the user sees the indented task land in it.
   prevSibling.collapsed = false;
+  // Done states follow the new structure: the new parent gains a subtask and the old one loses one.
+  if (oldParent) syncDoneFrom(w.tasks, oldParent.id);
+  syncDoneFrom(w.tasks, prevSibling.id);
   save();
   renderChecklist();
   updateProgress();
@@ -2478,6 +2501,9 @@ function unindentTask(id, syncFocus) {
   const [task] = parent.children.splice(childInfo.index, 1);
   // Insert after parent in parent's list
   parentInfo.list.splice(parentInfo.index + 1, 0, task);
+  // The old parent lost a subtask; the task's new parent (if any) gained one.
+  syncDoneFrom(w.tasks, parent.id);
+  syncParents(w.tasks, task.id);
   save();
   renderChecklist();
   updateProgress();
@@ -2692,8 +2718,17 @@ function rebuildTaskTreeFromChecklistDOM() {
   w.tasks = walk(document.getElementById('checklist'));
 }
 
-function handleTaskSortEnd() {
+function handleTaskSortEnd(evt) {
+  const w = currentWeek();
+  const movedId = evt && evt.item && evt.item.dataset ? evt.item.dataset.id : null;
+  const oldParent = w && movedId ? findParent(w.tasks, movedId) : null;
   rebuildTaskTreeFromChecklistDOM();
+  // A drag can change which parent a task belongs to: re-check the old and new parents.
+  if (w && movedId) {
+    if (oldParent) syncDoneFrom(w.tasks, oldParent.id);
+    const newParent = findParent(w.tasks, movedId);
+    if (newParent) syncDoneFrom(w.tasks, newParent.id);
+  }
   save();
   renderChecklist();
   updateProgress();
