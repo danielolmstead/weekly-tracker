@@ -349,6 +349,10 @@
   .kb-btn[hidden] { display: none; }
   .kb-btn.kb-delete { color: var(--danger); }
   .kb-spacer { flex: 1; }
+  /* Delete confirmation above the bar's trash button (positioned by script). */
+  #kb-confirm { position: absolute; bottom: calc(100% + 6px); left: 0; display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); }
+  #kb-confirm[hidden] { display: none; }
+  #kb-confirm .delete-confirm-btn { width: 48px; height: 48px; }
   /* Expand/collapse toggle sits at the far right of a parent task's row.
      Visually a sibling to .task-controls but with its own (always-on) opacity
      so users can see at a glance whether a task is currently collapsed. */
@@ -851,7 +855,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v73</div>
+  <div class="app-version" title="App version">v74</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -864,6 +868,12 @@
   <span class="kb-spacer"></span>
   <button class="kb-btn kb-delete" id="kb-delete" type="button" aria-label="Delete task" onclick="kbBarAction('delete', event)"><span data-icon="trash" data-icon-size="22"></span></button>
   <button class="kb-btn" type="button" aria-label="Hide keyboard" onclick="kbBarAction('hide', event)"><span data-icon="chevron-down" data-icon-size="22"></span></button>
+  <!-- Delete confirmation for the bar: sits right above the trash button, inside the bar so
+       tapping it never steals focus (the keyboard and the bar stay open). -->
+  <div id="kb-confirm" role="alertdialog" aria-label="Confirm delete" hidden>
+    <button class="delete-confirm-btn cancel" type="button" aria-label="Cancel" onclick="kbBarAction('delete-cancel', event)"><span data-icon="x" data-icon-size="24"></span></button>
+    <button class="delete-confirm-btn confirm" type="button" aria-label="Confirm delete" onclick="kbBarAction('delete-confirm', event)"><span data-icon="check" data-icon-size="24"></span></button>
+  </div>
 </div>
 
 <div id="main">
@@ -2407,10 +2417,25 @@ document.addEventListener('click', (e) => {
       }
     }
   }
+  // Delete confirmation: lives in the bar, above the trash button. The list is NOT
+  // re-rendered while it is open, so the label keeps focus, the keyboard stays up, and
+  // cancelling leaves the task selected exactly as it was.
+  const confirmBox = document.getElementById('kb-confirm');
+  function closeConfirm() { if (confirmBox) confirmBox.hidden = true; }
+  function openConfirm() {
+    if (!confirmBox) return;
+    confirmBox.hidden = false;
+    const del = document.getElementById('kb-delete');
+    const barW = bar.clientWidth, w = confirmBox.offsetWidth;
+    let left = del.offsetLeft + del.offsetWidth / 2 - w / 2;
+    left = Math.max(6, Math.min(left, barW - w - 6));
+    confirmBox.style.left = left + 'px';
+  }
   function show(el) {
     clearTimeout(hideTimer);
     const item = el.closest('.task-item, .shortlist-item');
     if (!item) return;
+    if (item.dataset.id !== taskId) closeConfirm();
     taskId = item.dataset.id;
     // Delete is main-list only: from the shortlist, deleting would remove the task
     // from the week entirely, and its confirm popover lives in the main list.
@@ -2422,6 +2447,7 @@ document.addEventListener('click', (e) => {
     keepVisible();
   }
   function hide() {
+    closeConfirm();
     bar.classList.remove('show');
     document.body.classList.remove('kb-open');
     bar.style.transform = '';
@@ -2458,9 +2484,22 @@ document.addEventListener('click', (e) => {
     else if (action === 'note') toggleNote(id);
     else if (action === 'tag') openTagModal(id);
     else if (action === 'due') setDue(id, ev);
-    else if (action === 'delete') deleteTask(id);
+    else if (action === 'delete') {
+      const w = currentWeek();
+      const task = w && findTask(w.tasks, id);
+      if (isEmptyTask(task)) { closeConfirm(); confirmDelete(id); }   // nothing to lose: no confirmation
+      else if (confirmBox && !confirmBox.hidden) closeConfirm();      // tapping trash again cancels
+      else openConfirm();
+    }
+    else if (action === 'delete-cancel') closeConfirm();             // task, focus and keyboard stay as they were
+    else if (action === 'delete-confirm') { closeConfirm(); confirmDelete(id); }
     else if (action === 'hide') { const el = activeLabel(); if (el) el.blur(); }
+    if (action !== 'delete' && action !== 'delete-cancel') closeConfirm();
   };
+  // A tap anywhere outside the bar dismisses a pending confirmation.
+  document.addEventListener('pointerdown', (e) => {
+    if (confirmBox && !confirmBox.hidden && !e.target.closest('#kb-bar')) closeConfirm();
+  });
 })();
 // Pasting into the label or note contenteditables should insert plain text
 // only. Otherwise formatted paste from Word/browsers ends up as arbitrary
