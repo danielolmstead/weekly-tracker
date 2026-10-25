@@ -347,7 +347,11 @@
   .kb-btn:disabled { background: none; color: var(--text3); opacity: 0.45; cursor: default; }
   .kb-sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; flex: none; }
   .kb-btn[hidden] { display: none; }
-  .kb-btn.kb-delete { color: var(--danger); }
+  /* Trash is the last item in the bar; its icon sits flush to the right edge
+     (12px gutter) instead of centered in a 44px tap target. The button keeps
+     its full width so the tap area is unchanged. */
+  .kb-btn.kb-delete { color: var(--danger); justify-content: flex-end; padding-right: 12px; }
+  #kb-bar { padding-right: 0; }
   .kb-spacer { flex: 1; }
   /* Delete confirmation above the bar's trash button (positioned by script). */
   #kb-confirm { position: absolute; bottom: calc(100% + 6px); left: 0; display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); }
@@ -855,7 +859,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v75</div>
+  <div class="app-version" title="App version">v76</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -867,7 +871,6 @@
   <button class="kb-btn" type="button" aria-label="Tag" onclick="kbBarAction('tag', event)"><span data-icon="tag" data-icon-size="22"></span></button>
   <span class="kb-spacer"></span>
   <button class="kb-btn kb-delete" id="kb-delete" type="button" aria-label="Delete task" onclick="kbBarAction('delete', event)"><span data-icon="trash" data-icon-size="22"></span></button>
-  <button class="kb-btn" type="button" aria-label="Hide keyboard" onclick="kbBarAction('hide', event)"><span data-icon="chevron-down" data-icon-size="22"></span></button>
   <!-- Delete confirmation for the bar: sits right above the trash button, inside the bar so
        tapping it never steals focus (the keyboard and the bar stay open). -->
   <div id="kb-confirm" role="alertdialog" aria-label="Confirm delete" hidden>
@@ -2352,7 +2355,7 @@ document.addEventListener('click', (e) => {
 
 // ─── KEYBOARD ACTION BAR (phones) ────────────────────────────────────────
 // While a task label is focused on a touch / narrow screen, #kb-bar sits directly
-// above the on-screen keyboard with Outdent, Indent, Note, Due, Tag and Hide keyboard.
+// above the on-screen keyboard with Outdent, Indent, Note, Due, and Tag.
 // Indent/Outdent are the touch equivalent of Tab / Shift+Tab, and because the bar
 // never takes focus, the keyboard stays open while you restructure a list.
 // Positioning uses visualViewport: on iOS Safari and Android Chrome the keyboard
@@ -2493,7 +2496,6 @@ document.addEventListener('click', (e) => {
     }
     else if (action === 'delete-cancel') closeConfirm();             // task, focus and keyboard stay as they were
     else if (action === 'delete-confirm') { closeConfirm(); confirmDelete(id); }
-    else if (action === 'hide') { const el = activeLabel(); if (el) el.blur(); }
     if (action !== 'delete' && action !== 'delete-cancel') closeConfirm();
   };
   // A tap anywhere outside the bar dismisses a pending confirmation.
