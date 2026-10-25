@@ -855,7 +855,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v74</div>
+  <div class="app-version" title="App version">v75</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -3458,17 +3458,12 @@ function newDay() {
     save();
     renderChecklist();
   };
-  const stay = ' They stay in this week\'s list.';
-  if (!open.length) {
-    driveShowModal('Start a new day?', n(done.length, 'checked-off task') + ' will come off the shortlist.' + stay,
-      [{ label: 'Start new day', accent: true, onClick: () => apply(false) }]);
-  } else if (!done.length) {
-    driveShowModal('Start a new day?', n(open.length, 'unchecked task') + ' on the shortlist. Keep them for the new day, or clear them from the shortlist?' + stay,
-      [{ label: 'Clear them', onClick: () => apply(true) }, { label: 'Keep them', accent: true, onClick: () => apply(false) }]);
-  } else {
-    driveShowModal('It\'s a new day!', 'Which would you like to do?',
-      [{ label: 'Clear all tasks', onClick: () => apply(true) }, { label: 'Clear checked-off tasks', accent: true, onClick: () => apply(false) }]);
-  }
+  // Same title and wording in every case. Only the buttons that would actually do something are shown:
+  // checked-only -> just "Clear checked-off tasks"; unchecked-only -> just "Clear all tasks"; both -> both.
+  const buttons = [];
+  if (open.length) buttons.push({ label: 'Clear all tasks', accent: !done.length, onClick: () => apply(true) });
+  if (done.length) buttons.push({ label: 'Clear checked-off tasks', accent: true, onClick: () => apply(false) });
+  driveShowModal('It\'s a new day!', 'Which would you like to do?', buttons);
 }
 
 function renderShortlist() {
