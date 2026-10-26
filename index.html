@@ -497,6 +497,11 @@
   /* While the confirmation is showing on this task, keep its row controls
      visible even without hover, so the trash button remains as the anchor. */
   .task-item.pending-delete .task-controls { opacity: 1; }
+  /* Same confirmation in Today's Shortlist rows. The row anchors the popover. */
+  .shortlist-item-row { position: relative; }
+  .shortlist-item-row:has(> .expand-toggle) .delete-confirm { right: 72px; }
+  .shortlist-item.pending-delete > .shortlist-item-row { background: var(--surface2); }
+  .shortlist-item.pending-delete > .shortlist-item-row > .task-controls { opacity: 1; }
   /* The pending-delete task stays visually highlighted the whole time the
      confirmation is up. This gives the floating popover an anchor and prevents
      the hover state from flickering off as the cursor moves onto the popover
@@ -879,7 +884,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v80</div>
+  <div class="app-version" title="App version">v81</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -2566,9 +2571,6 @@ function showMoveToast(text) {
     if (!item) return;
     if (item.dataset.id !== taskId) closeConfirm();
     taskId = item.dataset.id;
-    // Delete is main-list only: from the shortlist, deleting would remove the task
-    // from the week entirely, and its confirm popover lives in the main list.
-    document.getElementById('kb-delete').hidden = el.classList.contains('shortlist-label');
     bar.classList.add('show');
     document.body.classList.add('kb-open');
     updateMoveButton();
@@ -3550,11 +3552,19 @@ function renderShortlistItems(tasks, container, isRoot) {
           <button class="task-btn" onclick="openTagModal('${t.id}')" title="Add tag">${icon('tag', 13)}</button>
           <button class="task-btn" onclick="setDue('${t.id}', event)" title="Set due date">${icon('calendar', 13)}</button>
           <button class="task-btn move-btn" onclick="openMoveModal('${t.id}')" title="Move to workspace" aria-haspopup="dialog">${icon('forward', 13)}</button>
+          <button class="task-btn danger" onclick="deleteTask('${t.id}')" title="Delete task">${icon('trash', 13)}</button>
         </div>
         ${chevronHtml}
         ${starHtml}
+        ${t.id === pendingDeleteId ? `
+          <div class="delete-confirm">
+            <button class="delete-confirm-btn cancel" onclick="cancelDelete()" title="Cancel">${icon('x', 13)}</button>
+            <button class="delete-confirm-btn confirm" onclick="confirmDelete('${t.id}')" title="Confirm delete">${icon('check', 13)}</button>
+          </div>
+        ` : ''}
       </div>
     `;
+    if (t.id === pendingDeleteId) li.classList.add('pending-delete');
     container.appendChild(li);
     if (hasChildren && !isCollapsed) {
       const subUl = document.createElement('ul');
