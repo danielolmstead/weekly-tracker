@@ -357,6 +357,23 @@
   #kb-confirm { position: absolute; bottom: calc(100% + 6px); left: 0; display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); }
   #kb-confirm[hidden] { display: none; }
   #kb-confirm .delete-confirm-btn { width: 48px; height: 48px; }
+  /* Desktop Move button: only shown when there is another workspace to move to (body.multi-ws). */
+  .task-btn.move-btn { display: none; }
+  body.multi-ws .task-btn.move-btn { display: inline-flex; }
+  #move-pop { position: fixed; z-index: 140; min-width: 220px; max-width: calc(100vw - 16px); max-height: 280px; overflow-y: auto; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); }
+  #move-pop[hidden] { display: none; }
+  /* "Move to workspace" list above the bar's Move button (positioned by script). */
+  #kb-move-menu { position: absolute; bottom: calc(100% + 6px); left: 0; min-width: 220px; max-width: calc(100vw - 12px); max-height: 232px; overflow-y: auto; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); }
+  #kb-move-menu[hidden] { display: none; }
+  .kb-move-title { font-size: 12px; color: var(--text3); padding: 6px 10px 2px; }
+  .kb-move-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--text); font: inherit; font-size: 15px; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .kb-move-item:active:not(:disabled) { background: var(--surface2); }
+  .kb-move-item:disabled { color: var(--text3); cursor: default; }
+  .kb-move-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kb-move-week { flex: none; font-size: 12px; color: var(--text3); max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Brief confirmation after a task is moved to another workspace. */
+  #move-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 130; max-width: calc(100vw - 32px); padding: 10px 16px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-md); font-size: 14px; pointer-events: none; }
+  #move-toast[hidden] { display: none; }
   /* Expand/collapse toggle sits at the far right of a parent task's row.
      Visually a sibling to .task-controls but with its own (always-on) opacity
      so users can see at a glance whether a task is currently collapsed. */
@@ -859,7 +876,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v76</div>
+  <div class="app-version" title="App version">v78</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -869,15 +886,20 @@
   <button class="kb-btn" type="button" aria-label="Note" onclick="kbBarAction('note', event)"><span data-icon="pencil" data-icon-size="22"></span></button>
   <button class="kb-btn" type="button" aria-label="Due date" onclick="kbBarAction('due', event)"><span data-icon="calendar" data-icon-size="22"></span></button>
   <button class="kb-btn" type="button" aria-label="Tag" onclick="kbBarAction('tag', event)"><span data-icon="tag" data-icon-size="22"></span></button>
+  <button class="kb-btn" id="kb-move" type="button" aria-label="Move to workspace" aria-haspopup="true" onclick="kbBarAction('move', event)" hidden><span data-icon="forward" data-icon-size="22"></span></button>
   <span class="kb-spacer"></span>
   <button class="kb-btn kb-delete" id="kb-delete" type="button" aria-label="Delete task" onclick="kbBarAction('delete', event)"><span data-icon="trash" data-icon-size="22"></span></button>
   <!-- Delete confirmation for the bar: sits right above the trash button, inside the bar so
        tapping it never steals focus (the keyboard and the bar stay open). -->
+  <div id="kb-move-menu" role="menu" aria-label="Move to workspace" hidden></div>
   <div id="kb-confirm" role="alertdialog" aria-label="Confirm delete" hidden>
     <button class="delete-confirm-btn cancel" type="button" aria-label="Cancel" onclick="kbBarAction('delete-cancel', event)"><span data-icon="x" data-icon-size="24"></span></button>
     <button class="delete-confirm-btn confirm" type="button" aria-label="Confirm delete" onclick="kbBarAction('delete-confirm', event)"><span data-icon="check" data-icon-size="24"></span></button>
   </div>
 </div>
+
+<div id="move-pop" role="menu" aria-label="Move to workspace" hidden></div>
+<div id="move-toast" role="status" aria-live="polite" hidden></div>
 
 <div id="main">
   <div id="header">
@@ -1034,7 +1056,8 @@ const ICON_PATHS = {
   outdent: '<path d="M4 5h16"/><path d="M12 10h8"/><path d="M12 14h8"/><path d="M4 19h16"/><path d="M8 9l-4 3 4 3z"/>',
   star: '<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
-  menu: '<path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/>'
+  menu: '<path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/>',
+  forward: '<path d="m15 17 5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/>'
 };
 function icon(name, size) {
   size = size || 14;
@@ -1795,6 +1818,7 @@ function currentWorkspace() { return state.workspaces.find(ws => ws.id === state
 function renderWorkspaceSwitcher() {
   const nameEl = document.getElementById('ws-trigger-name');
   if (nameEl) nameEl.textContent = currentWorkspace().name;
+  document.body.classList.toggle('multi-ws', state.workspaces.length > 1);
   const menu = document.getElementById('ws-menu');
   if (!menu) return;
   const many = state.workspaces.length > 1;
@@ -2353,9 +2377,84 @@ document.addEventListener('click', (e) => {
   }, { passive: true });
 })();
 
+// ─── MOVE A TASK TO ANOTHER WORKSPACE ─────────────────────────────────────────
+// Used by the Move button in the action bar. The task is cut out of the current week and appended
+// to the end of the target workspace's current week (its open week; if none is open, its first).
+//   • A subtask becomes a top-level task there.
+//   • A task that has subtasks takes all of them along (they live inside the task object).
+// Done states, notes, tags, due dates and stars travel with the task. Returns the target week, or
+// null if nothing moved (no such workspace, or it has no weeks yet).
+function weekToReceive(ws) {
+  if (!ws || !ws.weeks || !ws.weeks.length) return null;
+  return ws.weeks.find(x => x.id === ws.currentWeekId) || ws.weeks[0];
+}
+function moveTaskToWorkspace(id, wsId) {
+  const w = currentWeek(); if (!w) return null;
+  const ws = state.workspaces.find(x => x.id === wsId);
+  if (!ws || ws.id === state.currentWorkspaceId) return null;
+  const target = weekToReceive(ws);
+  if (!target) return null;
+  const info = findListContaining(w.tasks, id);
+  if (!info) return null;
+  const oldParent = findParent(w.tasks, id);
+  const [task] = info.list.splice(info.index, 1);
+  if (!target.tasks) target.tasks = [];
+  target.tasks.push(task);
+  // The old parent lost a subtask: re-derive its done state (and its ancestors').
+  if (oldParent) syncDoneFrom(w.tasks, oldParent.id);
+  if (pendingDeleteId === id) pendingDeleteId = null;
+  save();
+  renderChecklist();
+  updateProgress();
+  renderSidebar();
+  return { ws, week: target };
+}
+// Desktop: the Move button in a row's hover controls opens this list under itself.
+function closeMovePop() { const m = document.getElementById('move-pop'); if (m) m.hidden = true; }
+function openMovePop(id, btn, ev) {
+  if (ev) ev.stopPropagation();
+  const m = document.getElementById('move-pop'); if (!m) return;
+  if (!m.hidden && m.dataset.for === id) { closeMovePop(); return; }
+  const others = state.workspaces.filter(x => x.id !== state.currentWorkspaceId);
+  m.innerHTML = '<div class="kb-move-title">Move to workspace</div>' + others.map(x => {
+    const wk = weekToReceive(x);
+    return `<button class="kb-move-item" type="button" role="menuitem" ${wk ? '' : 'disabled'} onclick="pickMoveTarget('${id}', '${x.id}')">
+      <span class="kb-move-name">${esc(x.name)}</span>
+      <span class="kb-move-week">${wk ? esc(wk.label || 'Current week') : 'No weeks yet'}</span>
+    </button>`;
+  }).join('');
+  m.dataset.for = id;
+  m.hidden = false;
+  const r = btn.getBoundingClientRect();
+  const w = m.offsetWidth, h = m.offsetHeight;
+  let left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
+  let top = r.bottom + 4;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);
+  m.style.left = left + 'px';
+  m.style.top = top + 'px';
+}
+function pickMoveTarget(id, wsId) {
+  closeMovePop();
+  const res = moveTaskToWorkspace(id, wsId);
+  if (res) showMoveToast(`Moved to ${res.ws.name}`);
+}
+document.addEventListener('click', (e) => { if (!e.target.closest('#move-pop, .move-btn')) closeMovePop(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMovePop(); });
+window.addEventListener('scroll', closeMovePop, true);
+window.addEventListener('resize', closeMovePop);
+var moveToastTimer = null;
+function showMoveToast(text) {
+  const el = document.getElementById('move-toast');
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(moveToastTimer);
+  moveToastTimer = setTimeout(() => { el.hidden = true; }, 2600);
+}
+
 // ─── KEYBOARD ACTION BAR (phones) ────────────────────────────────────────
 // While a task label is focused on a touch / narrow screen, #kb-bar sits directly
-// above the on-screen keyboard with Outdent, Indent, Note, Due, and Tag.
+// above the on-screen keyboard with Outdent, Indent, Note, Due, Tag, and Move to workspace.
 // Indent/Outdent are the touch equivalent of Tab / Shift+Tab, and because the bar
 // never takes focus, the keyboard stays open while you restructure a list.
 // Positioning uses visualViewport: on iOS Safari and Android Chrome the keyboard
@@ -2425,6 +2524,32 @@ document.addEventListener('click', (e) => {
   // cancelling leaves the task selected exactly as it was.
   const confirmBox = document.getElementById('kb-confirm');
   function closeConfirm() { if (confirmBox) confirmBox.hidden = true; }
+  // Move menu: lists the other workspaces. Same rules as the delete confirmation: it lives
+  // inside the bar so tapping it never steals focus, and nothing re-renders while it is open.
+  const moveMenu = document.getElementById('kb-move-menu');
+  const moveBtn = document.getElementById('kb-move');
+  function closeMoveMenu() { if (moveMenu) moveMenu.hidden = true; }
+  function openMoveMenu() {
+    if (!moveMenu || !moveBtn) return;
+    closeConfirm();
+    const others = state.workspaces.filter(x => x.id !== state.currentWorkspaceId);
+    moveMenu.innerHTML = '<div class="kb-move-title">Move to workspace</div>' + others.map(x => {
+      const wk = weekToReceive(x);
+      return `<button class="kb-move-item" type="button" role="menuitem" ${wk ? '' : 'disabled'} onclick="kbBarAction('move-to', event, '${x.id}')">
+        <span class="kb-move-name">${esc(x.name)}</span>
+        <span class="kb-move-week">${wk ? esc(wk.label || 'Current week') : 'No weeks yet'}</span>
+      </button>`;
+    }).join('');
+    moveMenu.hidden = false;
+    const barW = bar.clientWidth, w = moveMenu.offsetWidth;
+    let left = moveBtn.offsetLeft + moveBtn.offsetWidth / 2 - w / 2;
+    left = Math.max(6, Math.min(left, barW - w - 6));
+    moveMenu.style.left = left + 'px';
+  }
+  function updateMoveButton() {
+    // Only worth showing when there is somewhere else to go.
+    if (moveBtn) moveBtn.hidden = state.workspaces.length < 2;
+  }
   function openConfirm() {
     if (!confirmBox) return;
     confirmBox.hidden = false;
@@ -2438,19 +2563,21 @@ document.addEventListener('click', (e) => {
     clearTimeout(hideTimer);
     const item = el.closest('.task-item, .shortlist-item');
     if (!item) return;
-    if (item.dataset.id !== taskId) closeConfirm();
+    if (item.dataset.id !== taskId) { closeConfirm(); closeMoveMenu(); }
     taskId = item.dataset.id;
     // Delete is main-list only: from the shortlist, deleting would remove the task
     // from the week entirely, and its confirm popover lives in the main list.
     document.getElementById('kb-delete').hidden = el.classList.contains('shortlist-label');
     bar.classList.add('show');
     document.body.classList.add('kb-open');
+    updateMoveButton();
     position();
     updateButtons();
     keepVisible();
   }
   function hide() {
     closeConfirm();
+    closeMoveMenu();
     bar.classList.remove('show');
     document.body.classList.remove('kb-open');
     bar.style.transform = '';
@@ -2479,7 +2606,7 @@ document.addEventListener('click', (e) => {
   bar.addEventListener('pointerdown', keepFocus);
   bar.addEventListener('mousedown', keepFocus);
 
-  window.kbBarAction = function (action, ev) {
+  window.kbBarAction = function (action, ev, arg) {
     const id = taskId;
     if (!id) return;
     if (action === 'indent') indentTask(id, true);
@@ -2494,13 +2621,23 @@ document.addEventListener('click', (e) => {
       else if (confirmBox && !confirmBox.hidden) closeConfirm();      // tapping trash again cancels
       else openConfirm();
     }
+    else if (action === 'move') {
+      if (moveMenu && !moveMenu.hidden) closeMoveMenu(); else openMoveMenu();   // tapping Move again closes the list
+    }
+    else if (action === 'move-to') {
+      closeMoveMenu();
+      const res = moveTaskToWorkspace(id, arg);
+      if (res) showMoveToast(`Moved to ${res.ws.name}`);
+    }
     else if (action === 'delete-cancel') closeConfirm();             // task, focus and keyboard stay as they were
     else if (action === 'delete-confirm') { closeConfirm(); confirmDelete(id); }
     if (action !== 'delete' && action !== 'delete-cancel') closeConfirm();
+    if (action !== 'move' && action !== 'move-to') closeMoveMenu();
   };
   // A tap anywhere outside the bar dismisses a pending confirmation.
   document.addEventListener('pointerdown', (e) => {
     if (confirmBox && !confirmBox.hidden && !e.target.closest('#kb-bar')) closeConfirm();
+    if (moveMenu && !moveMenu.hidden && !e.target.closest('#kb-bar')) closeMoveMenu();
   });
 })();
 // Pasting into the label or note contenteditables should insert plain text
@@ -3195,6 +3332,7 @@ function renderTaskList(tasks, container, depth = 0) {
           <button class="task-btn note-btn ${noteOpen ? 'note-active' : ''}" onclick="toggleNote('${t.id}')" title="Toggle note">${icon('pencil', 13)}</button>
           <button class="task-btn" onclick="openTagModal('${t.id}')" title="Add tag">${icon('tag', 13)}</button>
           <button class="task-btn" onclick="setDue('${t.id}', event)" title="Set due date">${icon('calendar', 13)}</button>
+          <button class="task-btn move-btn" onclick="openMovePop('${t.id}', this, event)" title="Move to workspace" aria-haspopup="true">${icon('forward', 13)}</button>
           <button class="task-btn danger" onclick="deleteTask('${t.id}')" title="Delete">${icon('trash', 13)}</button>
         </div>
         ${expandToggle}
@@ -3420,6 +3558,7 @@ function renderShortlistItems(tasks, container, isRoot) {
           <button class="task-btn note-btn ${shortNoteOpen ? 'note-active' : ''}" onclick="toggleNote('${t.id}')" title="Toggle note">${icon('pencil', 13)}</button>
           <button class="task-btn" onclick="openTagModal('${t.id}')" title="Add tag">${icon('tag', 13)}</button>
           <button class="task-btn" onclick="setDue('${t.id}', event)" title="Set due date">${icon('calendar', 13)}</button>
+          <button class="task-btn move-btn" onclick="openMovePop('${t.id}', this, event)" title="Move to workspace" aria-haspopup="true">${icon('forward', 13)}</button>
         </div>
         ${chevronHtml}
         ${starHtml}
