@@ -884,7 +884,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v81</div>
+  <div class="app-version" title="App version">v82</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -2494,6 +2494,8 @@ function showMoveToast(text) {
   const BAR_H = 52;
   let taskId = null;
   let hideTimer = null;
+  let kbWasOpen = false;     // the on-screen keyboard has been seen up since this label got focus
+  let kbCloseTimer = null;
 
   // Main-list labels (.task-label) and Today's Shortlist labels (.shortlist-label).
   function isLabel(el) {
@@ -2578,7 +2580,29 @@ function showMoveToast(text) {
     updateButtons();
     keepVisible();
   }
+  // Android Back (or the keyboard's own dismiss arrow) closes the on-screen keyboard but
+  // leaves the label focused, so the bar and the highlighted task would linger. Treat the
+  // keyboard going away as "done editing": release focus, which hides the bar too.
+  function keyboardLift() {
+    return vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  }
+  function watchKeyboardClose() {
+    if (!vv || !bar.classList.contains('show')) return;
+    const lift = keyboardLift();
+    if (lift > 120) { kbWasOpen = true; clearTimeout(kbCloseTimer); return; }
+    if (!kbWasOpen || lift > 60) return;
+    clearTimeout(kbCloseTimer);
+    // Brief settle delay so a transient resize (rotation, re-render) isn't mistaken for a close.
+    kbCloseTimer = setTimeout(() => {
+      if (keyboardLift() > 60) return;
+      kbWasOpen = false;
+      const el = activeLabel();
+      if (el) el.blur();
+    }, 150);
+  }
   function hide() {
+    kbWasOpen = false;
+    clearTimeout(kbCloseTimer);
     closeConfirm();
     bar.classList.remove('show');
     document.body.classList.remove('kb-open');
@@ -2600,7 +2624,7 @@ function showMoveToast(text) {
   document.addEventListener('input', () => { if (bar.classList.contains('show')) keepVisible(); });
   document.addEventListener('selectionchange', () => { if (bar.classList.contains('show')) keepVisible(); });
   if (vv) {
-    vv.addEventListener('resize', () => { position(); keepVisible(); });
+    vv.addEventListener('resize', () => { position(); keepVisible(); watchKeyboardClose(); });
     vv.addEventListener('scroll', position);
   }
   // Taps on the bar must not steal focus from the label (that would close the keyboard).
