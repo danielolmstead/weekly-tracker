@@ -694,6 +694,7 @@
     .task-row, .shortlist-item-row { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     .task-label, .shortlist-label { -webkit-user-select: text; user-select: text; }
     .sortable-chosen { background: var(--accent-bg); border-radius: var(--radius); }
+    body.drag-hold .task-label, body.drag-hold .shortlist-label { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     .checkbox { width: 22px; height: 22px; border-width: 2px; border-radius: 4px; position: relative; }
     .checkbox::before { content: ''; position: absolute; inset: -9px -10px; }
     .checkbox.checked::after { width: 6px; height: 11px; }
@@ -884,7 +885,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v82</div>
+  <div class="app-version" title="App version">v83</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -3239,6 +3240,69 @@ function handleTaskSortEnd(evt) {
 // old instances simply go away with the old (now-detached) DOM nodes they were
 // attached to, same as how the old dragstart/dragend listeners were re-bound
 // fresh on every render rather than explicitly torn down.
+// While a row is held for dragging, Android's own long-press on the label text would
+// select a word, show Cut/Copy/Paste and open the keyboard (the label is a contenteditable).
+// That happens at ~500ms, after our 300ms hold has already picked the row up, and it steals
+// the gesture. So for the length of the hold the labels stop being editable and selectable
+// (and the context menu is suppressed); everything is restored on release.
+function holdLockBlock(e) { e.preventDefault(); }
+function holdLock(on) {
+  document.body.classList.toggle('drag-hold', on);
+  document.querySelectorAll('.task-label, .shortlist-label').forEach(el => {
+    if (on) { if (!el.hasAttribute('data-ce-was')) { el.setAttribute('data-ce-was', el.getAttribute('contenteditable') || 'true'); el.setAttribute('contenteditable', 'false'); } }
+    else if (el.hasAttribute('data-ce-was')) { el.setAttribute('contenteditable', el.getAttribute('data-ce-was')); el.removeAttribute('data-ce-was'); }
+  });
+  const m = on ? 'addEventListener' : 'removeEventListener';
+  document[m]('contextmenu', holdLockBlock, true);
+  document[m]('selectstart', holdLockBlock, true);
+}
+// SortableJS refuses to start a drag from an editable element (it checks
+// event.target.isContentEditable), and every task label is a contenteditable. So on a
+// phone a press-and-hold that lands on the text never became a drag: Android treated it as
+// a text press instead (select word, Cut/Copy/Paste, keyboard). Fix: for the length of a
+// touch press on a label that is NOT already being edited, the label is made
+// non-editable BEFORE Sortable's own pointerdown handler looks at it (this listener runs in
+// the capture phase). A quick tap puts it back and places the cursor where you tapped, so
+// tap-to-edit works as before; a hold becomes a drag (holdLock() above then keeps text
+// selection and the context menu off until release).
+(function () {
+  const mq = window.matchMedia('(max-width: 768px)');
+  const labelOf = (t) => (t && t.closest) ? t.closest('.task-label, .shortlist-label') : null;
+  let pressed = null, pressAt = 0;
+  function release() {
+    if (pressed && pressed.getAttribute('contenteditable') === 'false' && !document.body.classList.contains('drag-hold')) {
+      pressed.setAttribute('contenteditable', pressed.getAttribute('data-ce-was') || 'true');
+      pressed.removeAttribute('data-ce-was');
+    }
+    pressed = null;
+  }
+  document.addEventListener('pointerdown', (e) => {
+    release();
+    if (e.pointerType !== 'touch' || !mq.matches) return;
+    const l = labelOf(e.target);
+    if (!l || l === document.activeElement || l.getAttribute('contenteditable') !== 'true') return;
+    pressed = l; pressAt = Date.now();
+    l.setAttribute('data-ce-was', 'true');
+    l.setAttribute('contenteditable', 'false');
+  }, true);
+  document.addEventListener('pointerup', release, true);
+  document.addEventListener('pointercancel', release, true);
+  // Tap (a press shorter than the 300ms drag hold) on a label: focus it and drop the cursor
+  // under the finger, as the browser would have done for an editable element.
+  document.addEventListener('click', (e) => {
+    if (!mq.matches || !pressAt) return;
+    const wasQuick = Date.now() - pressAt < 300; pressAt = 0;
+    const l = labelOf(e.target);
+    if (!wasQuick || !l || e.target.closest('a') || document.activeElement === l || l.getAttribute('contenteditable') !== 'true') return;
+    l.focus();
+    try {
+      const r = document.caretRangeFromPoint(e.clientX, e.clientY);
+      const sel = window.getSelection();
+      if (r && l.contains(r.startContainer)) { sel.removeAllRanges(); sel.addRange(r); }
+      else { const rr = document.createRange(); rr.selectNodeContents(l); rr.collapse(false); sel.removeAllRanges(); sel.addRange(rr); }
+    } catch (err) {}
+  }, true);
+})();
 // On phone-width screens the grip is hidden and a row is dragged by pressing and
 // holding it (a quick tap still edits/toggles, and moving before the hold ends
 // scrolls the page as normal). Wider screens keep the hover grip.
@@ -3254,7 +3318,9 @@ function dragOptions(gripSelector) {
         if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
         const sel = window.getSelection(); if (sel) sel.removeAllRanges();
         if (navigator.vibrate) navigator.vibrate(15);
-      }
+        holdLock(true);
+      },
+      onUnchoose: () => holdLock(false)
     };
   }
   return { handle: gripSelector };
