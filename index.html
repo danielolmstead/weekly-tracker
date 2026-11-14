@@ -680,11 +680,19 @@
 
     /* Task rows */
     .task-item { margin-bottom: 0; }
-    .task-row, .shortlist-item-row { min-height: 38px; padding: 0 4px 0 4px; gap: 4px; align-items: center; }
+    /* Multi-line tasks: the checkbox, star and expand button stay level with the FIRST line of
+       text (not the vertical middle of the row). Every row is a 40px-tall "first line" band
+       (the star/expand tap targets are 40px); the label is centred inside that band with
+       margins, and the 22px checkbox gets (40 - 22) / 2 = 9px of top margin. */
+    .task-row, .shortlist-item-row { min-height: 38px; padding: 0 4px 0 4px; gap: 4px; align-items: flex-start; }
     .shortlist-item-row > .checkbox,
+    .task-row > .checkbox { margin-top: 9px; }
     .shortlist-item-row > .drag-handle,
     .shortlist-item-row > .star-toggle,
     .shortlist-item-row > .expand-toggle { margin-top: 0; }
+    .task-label-wrap { align-items: flex-start; min-height: 40px; }
+    .task-label, .subtask-list .task-label, .shortlist-label { margin-top: calc((40px - 1.35 * 16px * var(--fs, 1)) / 2 - 1px); margin-bottom: calc((40px - 1.35 * 16px * var(--fs, 1)) / 2 - 1px); }
+    .task-label-wrap > .note-indicator { margin-top: 5px; }
     /* On phones the stars keep a little more room than the "New day" button / "Add task" box:
        the star icon is a small tap target, so its right edge sits ~6px inside that line
        (row padding 4px + the 40px star button's own 10px around the 20px icon, vs the
@@ -773,7 +781,7 @@
     .theme-swatches { gap: 8px; }
     .theme-swatch { width: 28px; height: 28px; }
     .font-seg button { min-height: 40px; font-size: calc(16px * var(--fs, 1)); }
-    html[data-density="comfy"] .task-row, html[data-density="comfy"] .shortlist-item-row { min-height: 44px; }
+    html[data-density="comfy"] .task-row, html[data-density="comfy"] .shortlist-item-row { min-height: 0; padding-top: 2px; padding-bottom: 2px; }
     .app-version { font-size: calc(12px * var(--fs, 1)); }
 
     /* Dialogs */
@@ -885,7 +893,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v85</div>
+  <div class="app-version" title="App version">v86</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
