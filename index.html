@@ -254,6 +254,8 @@
   .sortable-fallback { list-style: none; }
   .sortable-ghost { background: var(--accent-bg) !important; border-radius: var(--radius); opacity: 0.6; }
   .sortable-ghost .task-row, .sortable-ghost .shortlist-item-row { visibility: hidden; }
+  /* Drop-onto-a-row-to-nest highlight (see initTaskSortable / nest-on-drop). */
+  .task-item.nest-target > .task-row { background: var(--accent-bg); outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius); }
 
   /* CHECKBOX */
   .checkbox { width: 17px; height: 17px; border-radius: 4px; border: 1.5px solid var(--border2); background: var(--surface); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
@@ -893,7 +895,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v86</div>
+  <div class="app-version" title="App version">v90</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -3230,6 +3232,30 @@ function rebuildTaskTreeFromChecklistDOM() {
 function handleTaskSortEnd(evt) {
   const w = currentWeek();
   const movedId = evt && evt.item && evt.item.dataset ? evt.item.dataset.id : null;
+  // Dropped onto the middle of another row: nest the dragged task (and, because its
+  // children live on the task object, its whole subtree) under that row instead of
+  // reordering. The data model is still untouched at this point, so edit it directly.
+  const nestId = nestDrag.targetId;
+  endNestDrag();
+  if (w && movedId && nestId && nestId !== movedId) {
+    const src = findListContaining(w.tasks, movedId);
+    const moved = src ? src.list[src.index] : null;
+    const target = findTask(w.tasks, nestId);
+    // Never nest a task inside its own subtree.
+    if (moved && target && !findTask(moved.children || [], nestId)) {
+      const oldParent = findParent(w.tasks, movedId);
+      src.list.splice(src.index, 1);
+      if (!target.children) target.children = [];
+      target.children.push(moved);
+      target.collapsed = false; // show the result of the drop
+      if (oldParent) syncDoneFrom(w.tasks, oldParent.id);
+      syncDoneFrom(w.tasks, target.id);
+      save();
+      renderChecklist();
+      updateProgress();
+      return;
+    }
+  }
   const oldParent = w && movedId ? findParent(w.tasks, movedId) : null;
   rebuildTaskTreeFromChecklistDOM();
   // A drag can change which parent a task belongs to: re-check the old and new parents.
@@ -3334,6 +3360,50 @@ function dragOptions(gripSelector) {
   return { handle: gripSelector };
 }
 
+// ─── NEST-ON-DROP ────────────────────────────────────────────────────────────
+// Dropping a dragged task onto the MIDDLE of another task's row nests it under that
+// task (works whether or not the target already has children). The top/bottom edge of a
+// row still reorders as before. While a row is held, its own subtask list is hidden so
+// its children visibly travel with it; they move with it in the data model too.
+const nestDrag = { item: null, targetId: null, targetEl: null, bound: false };
+function nestTargetAt(x, y) {
+  if (!nestDrag.item) return null;
+  const els = document.elementsFromPoint(x, y);
+  for (const el of els) {
+    const li = el.closest && el.closest('#checklist li.task-item');
+    if (!li || li === nestDrag.item || li.classList.contains('sortable-ghost')) continue;
+    const row = li.querySelector(':scope > .task-row');
+    if (!row) continue;
+    const r = row.getBoundingClientRect();
+    if (y < r.top || y > r.bottom) return null;
+    const f = (y - r.top) / r.height;
+    return (f >= 0.25 && f <= 0.75) ? li : null;
+  }
+  return null;
+}
+function setNestTarget(li) {
+  if (li === nestDrag.targetEl) return;
+  if (nestDrag.targetEl) nestDrag.targetEl.classList.remove('nest-target');
+  nestDrag.targetEl = li;
+  nestDrag.targetId = li ? li.dataset.id : null;
+  if (li) li.classList.add('nest-target');
+}
+function nestPointerMove(e) {
+  const p = (e.touches && e.touches[0]) || e;
+  if (p && typeof p.clientX === 'number') setNestTarget(nestTargetAt(p.clientX, p.clientY));
+}
+function startNestDrag(item) {
+  nestDrag.item = item; setNestTarget(null);
+  const sub = item.nextElementSibling;
+  if (sub && sub.tagName === 'UL' && sub.classList.contains('subtask-list') && sub.dataset.parentId === item.dataset.id) sub.style.display = 'none';
+  ['dragover', 'pointermove', 'touchmove'].forEach(t => document.addEventListener(t, nestPointerMove, true));
+}
+function endNestDrag() {
+  ['dragover', 'pointermove', 'touchmove'].forEach(t => document.removeEventListener(t, nestPointerMove, true));
+  setNestTarget(null);
+  nestDrag.item = null;
+}
+
 function initTaskSortable() {
   document.querySelectorAll('#checklist, .subtask-list').forEach(ul => {
     // #checklist itself is reused across renders (only its children are rebuilt), so drop
@@ -3346,6 +3416,15 @@ function initTaskSortable() {
       ghostClass: 'sortable-ghost',
       chosenClass: 'dragging',
       fallbackOnBody: true,
+      onStart: (evt) => startNestDrag(evt.item),
+      // Over the middle of a row = "nest here": freeze reordering so the rows don't
+      // shuffle under the pointer while the drop target is highlighted.
+      onMove: (evt, orig) => {
+        if (orig && typeof orig.clientX === 'number') {
+          const li = nestTargetAt(orig.clientX, orig.clientY);
+          if (li && li === evt.related) return false;
+        }
+      },
       onEnd: handleTaskSortEnd
     });
   });
