@@ -525,6 +525,11 @@
   .subtask-list { list-style: none; padding-left: 24px; margin-top: 1px; position: relative; transition: background 0.1s; }
   .subtask-list::before { content: ''; position: absolute; left: 42px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
   .subtask-list .task-label { font-size: calc(13px * var(--fs, 1)); }
+  /* Connector from a parent's checkbox down to its children's guide line. The guide
+     (.subtask-list::before) only starts below the parent's WHOLE row, so when the parent's text
+     wraps onto several lines the line used to be missing beside the extra lines. Draw it from the
+     bottom of the checkbox (rows centre their content on desktop) to the bottom of the row. */
+  .task-item:has(+ .subtask-list) > .task-row::after { content: ''; position: absolute; left: 42px; top: calc(50% + 9px); bottom: -2px; width: 1px; background: var(--border2); pointer-events: none; }
   .subtask-list .subtask-list { padding-left: 22px; }
 
   /* ADD ROOT TASK */
@@ -719,6 +724,8 @@
 
     /* Indent guides + note/meta rows follow the new checkbox centre */
     .subtask-list::before, .shortlist-subitems::before { left: 15px; }
+    /* Mobile rows are top-aligned: checkbox = 9px margin + 22px tall, so its bottom edge is at 31px */
+    .task-item:has(+ .subtask-list) > .task-row::after { left: 15px; top: 31px; bottom: -1px; }
     .task-note-area::before { left: 15px; }
     .task-meta, .task-note-area { padding-left: 34px; }
     .task-meta { gap: 8px; padding-top: 0; padding-bottom: 4px; margin-top: -6px; }
@@ -893,7 +900,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v86</div>
+  <div class="app-version" title="App version">v87</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
