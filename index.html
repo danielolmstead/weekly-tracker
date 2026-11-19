@@ -525,16 +525,6 @@
   .subtask-list { list-style: none; padding-left: 24px; margin-top: 1px; position: relative; transition: background 0.1s; }
   .subtask-list::before { content: ''; position: absolute; left: 42px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
   .subtask-list .task-label { font-size: calc(13px * var(--fs, 1)); }
-  /* CHECKBOX CONNECTOR LINES: every task gets a thin vertical line running down from just below
-     its checkbox, so wrapped (multi-line) tasks stay visually joined to the next checkbox.
-       - task WITH children: down to the end of its row, where .subtask-list::before takes over
-       - task with a next sibling: on to just above that sibling's checkbox
-       - last task in its list: a short stub that only appears when the row is taller than one line
-     Desktop rows centre their content, so the line starts at row middle + half the 17px checkbox + 4px gap. */
-  .task-item > .task-row::after { content: ''; position: absolute; left: 42px; top: calc(50% + 12.5px); bottom: 9px; width: 1px; background: var(--border2); pointer-events: none; }
-  .task-item:has(+ .subtask-list) > .task-row::after { bottom: -3px; }
-  .task-item:not(:has(+ .subtask-list)):has(~ .task-item) > .task-row::after { bottom: -7px; }
-  .sortable-ghost > .task-row::after, .task-item.dragging > .task-row::after { display: none; }
   .subtask-list .subtask-list { padding-left: 22px; }
 
   /* ADD ROOT TASK */
@@ -729,15 +719,6 @@
 
     /* Indent guides + note/meta rows follow the new checkbox centre */
     .subtask-list::before, .shortlist-subitems::before { left: 15px; }
-    /* Mobile rows are top-aligned: the checkbox is 9px margin + 22px tall (bottom edge at 31px), so
-       lines start at 35px. They hang off the whole <li> (not just the row) so they also run past
-       tag and note rows. The next checkbox starts 9px below the next <li>, so -5px leaves a 4px gap. */
-    .task-item > .task-row::after { content: none; }
-    .task-item { position: relative; }
-    .task-item::after { content: ''; position: absolute; left: 15px; top: 35px; bottom: 5px; width: 1px; background: var(--border2); pointer-events: none; }
-    .task-item:has(+ .subtask-list)::after { bottom: -1px; }
-    .task-item:not(:has(+ .subtask-list)):has(~ .task-item)::after { bottom: -5px; }
-    .sortable-ghost::after, .task-item.dragging::after { display: none; }
     .task-note-area::before { left: 15px; }
     .task-meta, .task-note-area { padding-left: 34px; }
     .task-meta { gap: 8px; padding-top: 0; padding-bottom: 4px; margin-top: -6px; }
@@ -912,7 +893,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v88</div>
+  <div class="app-version" title="App version">v86</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
