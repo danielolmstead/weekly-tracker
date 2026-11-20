@@ -635,7 +635,7 @@
     #sidebar {
       position: fixed; left: 0; top: 0; z-index: 150;
       transform: translateX(-100%);
-      transition: transform 0.22s ease;
+      transition: transform 55ms ease;
       box-shadow: var(--shadow-md);
     }
     #sidebar.open { transform: translateX(0); }
@@ -895,7 +895,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v91</div>
+  <div class="app-version" title="App version">v92</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -3374,7 +3374,7 @@ function dragOptions(gripSelector) {
 //     pause, still reorders as before.
 // The dragged row's own subtask list is hidden while held so its children visibly travel
 // with it; they move with it in the data model too.
-const NEST_DWELL = 220;      // ms to hover before a row arms as the nest target
+const NEST_DWELL = 55;       // ms to hover before a row arms as the nest target
 const NEST_SLOW = 0.4;       // px/ms — slower than this counts as "aiming" (holds off reorder swaps)
 const NEST_REST = 0.12;      // px/ms — slower than this counts as a real pause (counts toward arming)
 const nestDrag = { item: null, targetId: null, targetEl: null, candEl: null, candSince: 0, enterEl: null, enterSince: 0, timer: 0, last: null, speed: 9 };
