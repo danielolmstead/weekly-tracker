@@ -895,7 +895,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v90</div>
+  <div class="app-version" title="App version">v91</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -3361,23 +3361,34 @@ function dragOptions(gripSelector) {
 }
 
 // ─── NEST-ON-DROP ────────────────────────────────────────────────────────────
-// Dropping a dragged task onto the MIDDLE of another task's row nests it under that
-// task (works whether or not the target already has children). The top/bottom edge of a
-// row still reorders as before. While a row is held, its own subtask list is hidden so
-// its children visibly travel with it; they move with it in the data model too.
-const nestDrag = { item: null, targetId: null, targetEl: null, bound: false };
-function nestTargetAt(x, y) {
+// Dropping a dragged task onto another task's row nests it under that task (works whether
+// or not the target already has children). Rows are short (a single-line row is ~40px) and
+// a finger is imprecise, so this is timing-based rather than a thin geometric zone:
+//   • Hovering over a row's body (all but a thin top/bottom edge) for NEST_DWELL ms "arms"
+//     it: the row highlights (and a short buzz on phones) and drop = nest.
+//   • Once armed it stays armed while the pointer is anywhere over that row, so finger
+//     jitter can't drop it; and while armed/hovering, reordering is frozen so rows don't
+//     shuffle under the finger.
+//   • Moving slowly onto a row also holds off the reorder swap for NEST_DWELL ms, so you
+//     get time to settle. Moving fast, or going to the thin top/bottom edge after the
+//     pause, still reorders as before.
+// The dragged row's own subtask list is hidden while held so its children visibly travel
+// with it; they move with it in the data model too.
+const NEST_DWELL = 220;      // ms to hover before a row arms as the nest target
+const NEST_SLOW = 0.4;       // px/ms — slower than this counts as "aiming" (holds off reorder swaps)
+const NEST_REST = 0.12;      // px/ms — slower than this counts as a real pause (counts toward arming)
+const nestDrag = { item: null, targetId: null, targetEl: null, candEl: null, candSince: 0, enterEl: null, enterSince: 0, timer: 0, last: null, speed: 9 };
+function nestHitAt(x, y) {
   if (!nestDrag.item) return null;
-  const els = document.elementsFromPoint(x, y);
-  for (const el of els) {
+  for (const el of document.elementsFromPoint(x, y)) {
     const li = el.closest && el.closest('#checklist li.task-item');
     if (!li || li === nestDrag.item || li.classList.contains('sortable-ghost')) continue;
     const row = li.querySelector(':scope > .task-row');
     if (!row) continue;
     const r = row.getBoundingClientRect();
     if (y < r.top || y > r.bottom) return null;
-    const f = (y - r.top) / r.height;
-    return (f >= 0.25 && f <= 0.75) ? li : null;
+    const edge = Math.min(Math.max(r.height * 0.2, 6), 10);
+    return { li, middle: y >= r.top + edge && y <= r.bottom - edge };
   }
   return null;
 }
@@ -3386,22 +3397,55 @@ function setNestTarget(li) {
   if (nestDrag.targetEl) nestDrag.targetEl.classList.remove('nest-target');
   nestDrag.targetEl = li;
   nestDrag.targetId = li ? li.dataset.id : null;
-  if (li) li.classList.add('nest-target');
+  if (li) { li.classList.add('nest-target'); if (navigator.vibrate) navigator.vibrate(10); }
+}
+function nestEvaluate() {
+  const pt = nestDrag.last; if (!pt || !nestDrag.item) return;
+  clearTimeout(nestDrag.timer);
+  const hit = nestHitAt(pt.x, pt.y);
+  const hli = hit ? hit.li : null, now0 = Date.now();
+  if (nestDrag.enterEl !== hli) { nestDrag.enterEl = hli; nestDrag.enterSince = now0; }
+  // Armed: stay armed while the pointer is anywhere over that same row.
+  if (nestDrag.targetEl) {
+    if (hit && hit.li === nestDrag.targetEl) return;
+    setNestTarget(null);
+  }
+  if (!hit || !hit.middle) { nestDrag.candEl = null; return; }
+  const now = Date.now();
+  // Only a real pause counts: moving across the row restarts the clock.
+  if (nestDrag.candEl !== hit.li || nestDrag.speed > NEST_REST) { nestDrag.candEl = hit.li; nestDrag.candSince = now; }
+  if (now - nestDrag.candSince >= NEST_DWELL) setNestTarget(hit.li);
+  // A resting finger produces no move events, so re-check when the dwell runs out.
+  else nestDrag.timer = setTimeout(nestEvaluate, NEST_DWELL - (now - nestDrag.candSince) + 10);
 }
 function nestPointerMove(e) {
   const p = (e.touches && e.touches[0]) || e;
-  if (p && typeof p.clientX === 'number') setNestTarget(nestTargetAt(p.clientX, p.clientY));
+  if (!p || typeof p.clientX !== 'number') return;
+  const now = Date.now(), l = nestDrag.last;
+  if (l && now > l.t) nestDrag.speed = Math.hypot(p.clientX - l.x, p.clientY - l.y) / (now - l.t);
+  nestDrag.last = { x: p.clientX, y: p.clientY, t: now };
+  nestEvaluate();
+}
+// Sortable's onMove: return false to veto the reorder swap into evt.related.
+function nestShouldBlock(evt, orig) {
+  if (!orig || typeof orig.clientX !== 'number') return false;
+  const hit = nestHitAt(orig.clientX, orig.clientY);
+  if (!hit || hit.li !== evt.related) return false;
+  if (nestDrag.targetEl === hit.li || hit.middle) return true;
+  // Edge of a row entered slowly: give the dwell a chance before allowing the swap.
+  return nestDrag.speed < NEST_SLOW && nestDrag.enterEl === hit.li && Date.now() - nestDrag.enterSince < NEST_DWELL;
 }
 function startNestDrag(item) {
-  nestDrag.item = item; setNestTarget(null);
+  nestDrag.item = item; nestDrag.candEl = null; nestDrag.enterEl = null; nestDrag.last = null; nestDrag.speed = 9; setNestTarget(null);
   const sub = item.nextElementSibling;
   if (sub && sub.tagName === 'UL' && sub.classList.contains('subtask-list') && sub.dataset.parentId === item.dataset.id) sub.style.display = 'none';
   ['dragover', 'pointermove', 'touchmove'].forEach(t => document.addEventListener(t, nestPointerMove, true));
 }
 function endNestDrag() {
   ['dragover', 'pointermove', 'touchmove'].forEach(t => document.removeEventListener(t, nestPointerMove, true));
+  clearTimeout(nestDrag.timer);
   setNestTarget(null);
-  nestDrag.item = null;
+  nestDrag.item = null; nestDrag.candEl = null;
 }
 
 function initTaskSortable() {
@@ -3419,12 +3463,7 @@ function initTaskSortable() {
       onStart: (evt) => startNestDrag(evt.item),
       // Over the middle of a row = "nest here": freeze reordering so the rows don't
       // shuffle under the pointer while the drop target is highlighted.
-      onMove: (evt, orig) => {
-        if (orig && typeof orig.clientX === 'number') {
-          const li = nestTargetAt(orig.clientX, orig.clientY);
-          if (li && li === evt.related) return false;
-        }
-      },
+      onMove: (evt, orig) => { if (nestShouldBlock(evt, orig)) return false; },
       onEnd: handleTaskSortEnd
     });
   });
