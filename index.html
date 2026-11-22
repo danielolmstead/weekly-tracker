@@ -255,7 +255,7 @@
   .sortable-ghost { background: var(--accent-bg) !important; border-radius: var(--radius); opacity: 0.6; }
   .sortable-ghost .task-row, .sortable-ghost .shortlist-item-row { visibility: hidden; }
   /* Drop-onto-a-row-to-nest highlight (see initTaskSortable / nest-on-drop). */
-  .task-item.nest-target > .task-row { background: var(--accent-bg); outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius); }
+  .task-item.nest-target > .task-row, .shortlist-item.nest-target > .shortlist-item-row { background: var(--accent-bg); outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius); }
 
   /* CHECKBOX */
   .checkbox { width: 17px; height: 17px; border-radius: 4px; border: 1.5px solid var(--border2); background: var(--surface); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
@@ -895,7 +895,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v92</div>
+  <div class="app-version" title="App version">v94</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -3229,6 +3229,25 @@ function rebuildTaskTreeFromChecklistDOM() {
   w.tasks = walk(document.getElementById('checklist'));
 }
 
+// Move a task (with its whole subtree: children live on the task object) to be the last child
+// of another task. Shared by the main list and the shortlist. Returns false (and changes
+// nothing) if the move is invalid, e.g. nesting a task inside its own subtree.
+function nestTaskUnder(w, movedId, nestId) {
+  const src = findListContaining(w.tasks, movedId);
+  const moved = src ? src.list[src.index] : null;
+  const target = findTask(w.tasks, nestId);
+  if (!moved || !target || findTask(moved.children || [], nestId)) return false;
+  const oldParent = findParent(w.tasks, movedId);
+  src.list.splice(src.index, 1);
+  if (!target.children) target.children = [];
+  target.children.push(moved);
+  target.collapsed = false;          // show the result of the drop in the main list
+  target.shortlistCollapsed = false; // ...and in the shortlist
+  if (oldParent) syncDoneFrom(w.tasks, oldParent.id);
+  syncDoneFrom(w.tasks, target.id);
+  return true;
+}
+
 function handleTaskSortEnd(evt) {
   const w = currentWeek();
   const movedId = evt && evt.item && evt.item.dataset ? evt.item.dataset.id : null;
@@ -3237,24 +3256,11 @@ function handleTaskSortEnd(evt) {
   // reordering. The data model is still untouched at this point, so edit it directly.
   const nestId = nestDrag.targetId;
   endNestDrag();
-  if (w && movedId && nestId && nestId !== movedId) {
-    const src = findListContaining(w.tasks, movedId);
-    const moved = src ? src.list[src.index] : null;
-    const target = findTask(w.tasks, nestId);
-    // Never nest a task inside its own subtree.
-    if (moved && target && !findTask(moved.children || [], nestId)) {
-      const oldParent = findParent(w.tasks, movedId);
-      src.list.splice(src.index, 1);
-      if (!target.children) target.children = [];
-      target.children.push(moved);
-      target.collapsed = false; // show the result of the drop
-      if (oldParent) syncDoneFrom(w.tasks, oldParent.id);
-      syncDoneFrom(w.tasks, target.id);
-      save();
-      renderChecklist();
-      updateProgress();
-      return;
-    }
+  if (w && movedId && nestId && nestId !== movedId && nestTaskUnder(w, movedId, nestId)) {
+    save();
+    renderChecklist();
+    updateProgress();
+    return;
   }
   const oldParent = w && movedId ? findParent(w.tasks, movedId) : null;
   rebuildTaskTreeFromChecklistDOM();
@@ -3366,29 +3372,42 @@ function dragOptions(gripSelector) {
 // a finger is imprecise, so this is timing-based rather than a thin geometric zone:
 //   • Hovering over a row's body (all but a thin top/bottom edge) for NEST_DWELL ms "arms"
 //     it: the row highlights (and a short buzz on phones) and drop = nest.
-//   • Once armed it stays armed while the pointer is anywhere over that row, so finger
-//     jitter can't drop it; and while armed/hovering, reordering is frozen so rows don't
-//     shuffle under the finger.
-//   • Moving slowly onto a row also holds off the reorder swap for NEST_DWELL ms, so you
-//     get time to settle. Moving fast, or going to the thin top/bottom edge after the
-//     pause, still reorders as before.
+//   • Only the middle of a row can arm. Once armed it stays armed while the pointer is
+//     well inside the row (so jitter can't drop it); reaching the row's top or bottom edge
+//     disarms it. Reordering is frozen only while aiming at a row's middle, so the edges of
+//     every row are free to reorder (after a brief hold if you enter an edge slowly, aiming
+//     for the middle): that is how a task lands BETWEEN other tasks.
 // The dragged row's own subtask list is hidden while held so its children visibly travel
 // with it; they move with it in the data model too.
 const NEST_DWELL = 55;       // ms to hover before a row arms as the nest target
-const NEST_SLOW = 0.4;       // px/ms — slower than this counts as "aiming" (holds off reorder swaps)
+const NEST_SLOW = 0.4;       // px/ms — slower than this counts as "aiming" at a row
 const NEST_REST = 0.12;      // px/ms — slower than this counts as a real pause (counts toward arming)
-const nestDrag = { item: null, targetId: null, targetEl: null, candEl: null, candSince: 0, enterEl: null, enterSince: 0, timer: 0, last: null, speed: 9 };
+// The nest machinery below is shared by the main list and Today's Shortlist; each drag
+// passes the config for the list it is in (how to find rows, and where a row keeps its
+// children: the main list renders them as a sibling <ul>, the shortlist inside the <li>).
+const NEST_CFG = {
+  main: { hit: '#checklist li.task-item', row: ':scope > .task-row',
+          sub: li => { const u = li.nextElementSibling; return (u && u.tagName === 'UL' && u.classList.contains('subtask-list') && u.dataset.parentId === li.dataset.id) ? u : null; } },
+  short: { hit: '#shortlist-items li.shortlist-item', row: ':scope > .shortlist-item-row',
+          sub: li => li.querySelector(':scope > ul.shortlist-subitems') }
+};
+const nestDrag = { cfg: NEST_CFG.main, item: null, targetId: null, targetEl: null, candEl: null, candSince: 0, enterEl: null, enterSince: 0, timer: 0, last: null, speed: 9 };
 function nestHitAt(x, y) {
   if (!nestDrag.item) return null;
   for (const el of document.elementsFromPoint(x, y)) {
-    const li = el.closest && el.closest('#checklist li.task-item');
+    const li = el.closest && el.closest(nestDrag.cfg.hit);
     if (!li || li === nestDrag.item || li.classList.contains('sortable-ghost')) continue;
-    const row = li.querySelector(':scope > .task-row');
+    const row = li.querySelector(nestDrag.cfg.row);
     if (!row) continue;
     const r = row.getBoundingClientRect();
     if (y < r.top || y > r.bottom) return null;
-    const edge = Math.min(Math.max(r.height * 0.2, 6), 10);
-    return { li, middle: y >= r.top + edge && y <= r.bottom - edge };
+    // middle: the zone that can ARM a nest (central ~40% of the row). keep: a wider band an
+    // armed row stays armed in, so jitter can't drop it. Outside keep = a row edge, where the
+    // task is always free to reorder (land between rows).
+    const eArm = Math.min(Math.max(r.height * 0.3, 8), 14), eKeep = Math.min(Math.max(r.height * 0.2, 5), 9);
+    return { li,
+      middle: y >= r.top + eArm && y <= r.bottom - eArm,
+      keep: y >= r.top + eKeep && y <= r.bottom - eKeep };
   }
   return null;
 }
@@ -3405,9 +3424,9 @@ function nestEvaluate() {
   const hit = nestHitAt(pt.x, pt.y);
   const hli = hit ? hit.li : null, now0 = Date.now();
   if (nestDrag.enterEl !== hli) { nestDrag.enterEl = hli; nestDrag.enterSince = now0; }
-  // Armed: stay armed while the pointer is anywhere over that same row.
+  // Armed: stay armed while the pointer is still well inside that same row.
   if (nestDrag.targetEl) {
-    if (hit && hit.li === nestDrag.targetEl) return;
+    if (hit && hit.li === nestDrag.targetEl && hit.keep) return;
     setNestTarget(null);
   }
   if (!hit || !hit.middle) { nestDrag.candEl = null; return; }
@@ -3431,14 +3450,28 @@ function nestShouldBlock(evt, orig) {
   if (!orig || typeof orig.clientX !== 'number') return false;
   const hit = nestHitAt(orig.clientX, orig.clientY);
   if (!hit || hit.li !== evt.related) return false;
-  if (nestDrag.targetEl === hit.li || hit.middle) return true;
-  // Edge of a row entered slowly: give the dwell a chance before allowing the swap.
+  // Freeze reordering only while the pointer is deep in a row (aiming to nest). At a row's
+  // top/bottom edge the swap always goes through, so tasks can land between rows.
+  if ((nestDrag.targetEl === hit.li && hit.keep) || hit.middle) return true;
+  // A row's edge entered slowly: you are probably aiming for its middle, so hold the swap
+  // for one dwell. Entering fast (a sweep), or resting on the edge, reorders.
   return nestDrag.speed < NEST_SLOW && nestDrag.enterEl === hit.li && Date.now() - nestDrag.enterSince < NEST_DWELL;
 }
-function startNestDrag(item) {
+// At a row's top/bottom edge the pointer's position decides placement (top edge = before that
+// row, bottom edge = after it), instead of SortableJS's direction heuristics, which could
+// leave a task un-moved after it had been held over a row's middle.
+function nestEdgeVector(evt, orig) {
+  if (!orig || typeof orig.clientX !== 'number') return;
+  const hit = nestHitAt(orig.clientX, orig.clientY);
+  if (!hit || hit.li !== evt.related) return;
+  const r = hit.li.querySelector(nestDrag.cfg.row).getBoundingClientRect();
+  return orig.clientY < r.top + r.height / 2 ? -1 : 1;
+}
+function startNestDrag(item, cfg) {
+  nestDrag.cfg = cfg || NEST_CFG.main;
   nestDrag.item = item; nestDrag.candEl = null; nestDrag.enterEl = null; nestDrag.last = null; nestDrag.speed = 9; setNestTarget(null);
-  const sub = item.nextElementSibling;
-  if (sub && sub.tagName === 'UL' && sub.classList.contains('subtask-list') && sub.dataset.parentId === item.dataset.id) sub.style.display = 'none';
+  const sub = nestDrag.cfg.sub(item);
+  if (sub) sub.style.display = 'none';
   ['dragover', 'pointermove', 'touchmove'].forEach(t => document.addEventListener(t, nestPointerMove, true));
 }
 function endNestDrag() {
@@ -3460,10 +3493,10 @@ function initTaskSortable() {
       ghostClass: 'sortable-ghost',
       chosenClass: 'dragging',
       fallbackOnBody: true,
-      onStart: (evt) => startNestDrag(evt.item),
+      onStart: (evt) => startNestDrag(evt.item, NEST_CFG.main),
       // Over the middle of a row = "nest here": freeze reordering so the rows don't
       // shuffle under the pointer while the drop target is highlighted.
-      onMove: (evt, orig) => { if (nestShouldBlock(evt, orig)) return false; },
+      onMove: (evt, orig) => { if (nestShouldBlock(evt, orig)) return false; return nestEdgeVector(evt, orig); },
       onEnd: handleTaskSortEnd
     });
   });
@@ -3645,35 +3678,80 @@ function collectShortlistRootsOrdered(w) {
   return roots;
 }
 
-// Drag-and-drop reordering for root shortlist items, via SortableJS — same
-// rationale and general approach as the main checklist's initTaskSortable()
-// above. Only root items are draggable (nested items follow their parent's
-// tree order and never had a drag handle to begin with — see the .spacer
-// comment in renderShortlistItems), so this only ever needs ONE Sortable
-// instance on the single root list, no cross-list `group` needed.
-function handleShortlistSortEnd() {
+// Drag and drop in the shortlist works like the main list (see initTaskSortable and the
+// NEST-ON-DROP section): every row is draggable, pausing on a row's middle nests the dragged
+// task under it, a row's edges place it before/after, and its children travel with it. Moves
+// change the real task tree (so the main list follows); reordering among top-level rows only
+// changes w.shortlistOrder, the shortlist's own order.
+function handleShortlistSortEnd(evt) {
   const w = currentWeek(); if (!w) return;
-  w.shortlistOrder = Array.from(document.getElementById('shortlist-items').children)
-    .filter(li => li.classList.contains('shortlist-item'))
-    .map(li => li.dataset.id);
-  save();
-  renderShortlist();
+  const item = evt && evt.item;
+  const movedId = item && item.dataset ? item.dataset.id : null;
+  const nestId = nestDrag.targetId;
+  endNestDrag();
+  const done = () => { save(); renderChecklist(); updateProgress(); };
+  if (!movedId) { renderShortlist(); return; }
+  // Same gestures as the main list. Dropped on the middle of another row: nest under it
+  // (a real change to the task tree, so the main list updates too).
+  if (nestId && nestId !== movedId && nestTaskUnder(w, movedId, nestId)) { done(); return; }
+  const ul = item.parentElement;
+  const idsOf = list => Array.from(list.children).filter(li => li.classList.contains('shortlist-item')).map(li => li.dataset.id);
+  const wasRoot = !!(evt.from && evt.from.id === 'shortlist-items');
+  const oldParent = findParent(w.tasks, movedId);
+  if (ul && ul.id === 'shortlist-items') {
+    // Landed at the top level of the shortlist.
+    if (!wasRoot) {
+      // It was nested under a starred task: pull it out to sit just after that parent in the
+      // task tree and star it, so it stands on its own in the shortlist.
+      const src = findListContaining(w.tasks, movedId);
+      const moved = src ? src.list[src.index] : null;
+      if (moved && oldParent) {
+        src.list.splice(src.index, 1);
+        const pl = findListContaining(w.tasks, oldParent.id);
+        pl.list.splice(pl.index + 1, 0, moved);
+        moved.shortlisted = true;
+        syncDoneFrom(w.tasks, oldParent.id);
+      }
+    }
+    w.shortlistOrder = idsOf(ul);
+    done(); return;
+  }
+  // Landed inside some task's nested list: that list's DOM order is the children's order.
+  const parentLi = ul && ul.closest('li.shortlist-item');
+  const newParent = parentLi ? findTask(w.tasks, parentLi.dataset.id) : null;
+  const src = findListContaining(w.tasks, movedId);
+  const moved = src ? src.list[src.index] : null;
+  if (!newParent || !moved || findTask(moved.children || [], newParent.id) || newParent.id === movedId) { renderShortlist(); return; }
+  src.list.splice(src.index, 1);
+  const rest = newParent.children || [];
+  const next = [];
+  idsOf(ul).forEach(id => { const t = id === movedId ? moved : rest.find(c => c.id === id); if (t) next.push(t); });
+  rest.forEach(c => { if (!next.includes(c)) next.push(c); });
+  newParent.children = next;
+  if (oldParent) syncDoneFrom(w.tasks, oldParent.id);
+  syncDoneFrom(w.tasks, newParent.id);
+  done();
 }
 
 function initShortlistSortable() {
-  const list = document.getElementById('shortlist-items');
-  if (!list) return;
-  // #shortlist-items is the same element on every render, so without this each render
-  // stacked another Sortable on it and, after the first re-render, rows could be picked
-  // up but never reordered. Drop the old instance before making a new one.
-  const old = Sortable.get(list); if (old) old.destroy();
-  Sortable.create(list, {
-    ...dragOptions('.drag-handle:not(.spacer)'),
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'dragging',
-    fallbackOnBody: true,
-    onEnd: handleShortlistSortEnd
+  // The top-level list and every expanded nested list share one group, so a task can be
+  // dragged between levels exactly like in the main list.
+  document.querySelectorAll('#shortlist-items, #shortlist-items .shortlist-subitems').forEach(ul => {
+    // #shortlist-items is the same element on every render, so without this each render
+    // stacked another Sortable on it and, after the first re-render, rows could be picked
+    // up but never reordered. Drop the old instance before making a new one.
+    const old = Sortable.get(ul); if (old) old.destroy();
+    Sortable.create(ul, {
+      group: 'shortlist-list',
+      ...dragOptions('.drag-handle'),
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'dragging',
+      fallbackOnBody: true,
+      onStart: (evt) => startNestDrag(evt.item, NEST_CFG.short),
+      onMove: (evt, orig) => { if (nestShouldBlock(evt, orig)) return false; return nestEdgeVector(evt, orig); },
+      onEnd: handleShortlistSortEnd
+    });
   });
 }
 
@@ -3744,9 +3822,8 @@ function renderShortlistItems(tasks, container, isRoot) {
     // the drag handle's ~26px of reserved space nearly cancels out the 24px
     // indent from .shortlist-subitems > .shortlist-item, so the indent
     // becomes invisible even though the CSS padding is correctly applied.
-    const gripHtml = isRoot
-      ? `<span class="drag-handle" title="Drag to reorder">${icon('grip', 14)}</span>`
-      : `<span class="drag-handle spacer" aria-hidden="true">${icon('grip', 14)}</span>`;
+    // Nested rows are draggable too now (same as the main list), so every row has a real grip.
+    const gripHtml = `<span class="drag-handle" title="Drag to reorder">${icon('grip', 14)}</span>`;
     const li = document.createElement('li');
     li.className = 'shortlist-item';
     li.dataset.id = t.id;
@@ -3758,7 +3835,7 @@ function renderShortlistItems(tasks, container, isRoot) {
     // Indent for nested items comes from CSS alone now (.shortlist-subitems >
     // .shortlist-item), which correctly compounds at every nesting depth —
     // see the comment above that rule. No inline style needed here.
-    // Draggability (root items only) is wired up by initShortlistSortable()
+    // Draggability (every row) is wired up by initShortlistSortable()
     // (SortableJS) once, on the whole list, after rendering — not per-item here.
     li.innerHTML = `
       ${crumbHtml}
