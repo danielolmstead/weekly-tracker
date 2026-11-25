@@ -910,7 +910,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v101</div>
+  <div class="app-version" title="App version">v103</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -1416,7 +1416,7 @@ function updateSearchScopeBtn() {
   if (!btn) return;
   const multi = state.workspaces.length > 1;
   btn.style.display = multi ? '' : 'none';
-  btn.textContent = searchAllWorkspaces ? 'All workspaces' : currentWorkspace().name + ' only';
+  btn.textContent = searchAllWorkspaces ? 'All workspaces' : 'This workspace only';
   btn.title = searchAllWorkspaces ? 'Searching every workspace. Click to search only this one.' : 'Searching this workspace. Click to search every workspace.';
 }
 function toggleSearchScope() {
