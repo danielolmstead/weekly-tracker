@@ -910,7 +910,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v100</div>
+  <div class="app-version" title="App version">v101</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -1146,7 +1146,9 @@ function updateThemeMeta() {
 }
 window.addEventListener('resize', () => { try { updateThemeMeta(); } catch (e) {} });
 
-function applyTheme(themeKey) {
+// Theme color is stored per workspace (ws.theme); light/dark stays app-wide (wt_dark).
+// persist=false re-applies the colors (e.g. after a light/dark switch) without saving anything.
+function applyTheme(themeKey, persist = true) {
   const theme = THEMES[themeKey] || THEMES.forest;
   const mode = document.body.classList.contains('dark') ? 'dark' : 'light';
   const c = theme[mode];
@@ -1161,8 +1163,18 @@ function applyTheme(themeKey) {
   // desktop title bar matches header/sidebar surface: #1e1d1b (dark) / white (light)
   updateThemeMeta();
   currentTheme = themeKey;
-  localStorage.setItem('wt_theme', themeKey);
+  if (persist) {
+    try { const ws = currentWorkspace(); if (ws && ws.theme !== themeKey) { ws.theme = themeKey; save(); } } catch (e) {}
+    // Also kept as the starting color for workspaces that have none yet (older data).
+    try { localStorage.setItem('wt_theme', themeKey); } catch (e) {}
+  }
   renderThemePicker();
+}
+// Show the active workspace's own theme color (called whenever the workspace changes or data loads).
+function applyWorkspaceTheme() {
+  let key = 'forest';
+  try { const ws = currentWorkspace(); if (ws && THEMES[ws.theme]) key = ws.theme; } catch (e) {}
+  applyTheme(key, false);
 }
 
 function renderThemePicker() {
@@ -1239,8 +1251,9 @@ function toggleSettingsMenu(e) {
 // pre-workspaces shape ({ weeks, currentWeekId }) into a single workspace.
 const STATE_VERSION = 2;
 const DEFAULT_WORKSPACE_NAME = 'This Week';
-function adoptState(raw) {
+function adoptState(raw, fallbackTheme) {
   if (!raw || typeof raw !== 'object') raw = {};
+  const legacyTheme = THEMES[localStorage.getItem('wt_theme')] ? localStorage.getItem('wt_theme') : 'forest';
   if (typeof raw.version === 'number' && raw.version > STATE_VERSION) {
     const err = new Error('This data is from a newer version of This Week. Reload the app to update.');
     err.code = 'newer-version';
@@ -1252,18 +1265,20 @@ function adoptState(raw) {
   } else {
     const id = uid();
     s = {
-      workspaces: [{ id, name: DEFAULT_WORKSPACE_NAME, weeks: Array.isArray(raw.weeks) ? raw.weeks : [], currentWeekId: raw.currentWeekId || null }],
+      workspaces: [{ id, name: DEFAULT_WORKSPACE_NAME, weeks: Array.isArray(raw.weeks) ? raw.weeks : [], currentWeekId: raw.currentWeekId || null, theme: legacyTheme }],
       currentWorkspaceId: id
     };
     if (raw.lastModified) s.lastModified = raw.lastModified;
   }
   s.version = STATE_VERSION;
-  if (!s.workspaces.length) s.workspaces.push({ id: uid(), name: DEFAULT_WORKSPACE_NAME, weeks: [], currentWeekId: null });
+  if (!s.workspaces.length) s.workspaces.push({ id: uid(), name: DEFAULT_WORKSPACE_NAME, weeks: [], currentWeekId: null, theme: legacyTheme });
   s.workspaces.forEach(ws => {
     if (!ws.id) ws.id = uid();
     if (!ws.name) ws.name = DEFAULT_WORKSPACE_NAME;
     if (!Array.isArray(ws.weeks)) ws.weeks = [];
     if (ws.currentWeekId === undefined) ws.currentWeekId = null;
+    // Older data has one global theme; every existing workspace starts with it so nothing changes visibly.
+    if (!THEMES[ws.theme]) ws.theme = THEMES[fallbackTheme] ? fallbackTheme : legacyTheme;
   });
   if (!s.workspaces.some(ws => ws.id === s.currentWorkspaceId)) s.currentWorkspaceId = s.workspaces[0].id;
   const active = () => s.workspaces.find(ws => ws.id === s.currentWorkspaceId) || s.workspaces[0];
@@ -1359,7 +1374,7 @@ function renderDensityPicker() {
 
 if (localStorage.getItem('wt_dark') === '1') document.body.classList.add('dark');
 hydrateStaticIcons();
-applyTheme(currentTheme);
+applyWorkspaceTheme();
 applyFont(currentFont);
 applyFontSize(currentFontSize);
 applyDensity(currentDensity);
@@ -1379,7 +1394,7 @@ function setDark(isDark) {
   document.body.classList.toggle('dark', !!isDark);
   try { localStorage.setItem('wt_dark', isDark ? '1' : '0'); } catch (e) {}
   updateDarkBtn();
-  applyTheme(currentTheme); // re-apply so accent colors switch to dark-mode variant
+  applyTheme(currentTheme, false); // re-apply so accent colors switch to dark-mode variant
 }
 // Draws the Light / Dark segmented control in Settings (name kept: import calls it).
 function updateDarkBtn() {
@@ -1592,7 +1607,7 @@ function importData(event) {
     // adoptState also converts an older backup (a plain list of weeks) into one workspace.
     let imported;
     try {
-      imported = adoptState(JSON.parse(JSON.stringify(importedRaw)));
+      imported = adoptState(JSON.parse(JSON.stringify(importedRaw)), data && data.theme);
     } catch (err) {
       alert(err.message || 'Could not read that backup.');
       input.value = '';
@@ -1632,12 +1647,8 @@ function importData(event) {
       localStorage.setItem('wt_dark', importedDark ? '1' : '0');
       updateDarkBtn();
     }
-    if (data && data.theme && THEMES[data.theme]) {
-      applyTheme(data.theme);
-    } else {
-      // Re-apply current theme in case dark mode changed
-      applyTheme(currentTheme);
-    }
+    // Each workspace carries its own theme; just show the active one (and the right light/dark variant).
+    applyWorkspaceTheme();
 
     renderWorkspaceSwitcher();
     renderSidebar();
@@ -1869,6 +1880,7 @@ function currentWorkspace() { return state.workspaces.find(ws => ws.id === state
 function renderWorkspaceSwitcher() {
   const nameEl = document.getElementById('ws-trigger-name');
   if (nameEl) nameEl.textContent = currentWorkspace().name;
+  applyWorkspaceTheme();
   document.body.classList.toggle('multi-ws', state.workspaces.length > 1);
   const menu = document.getElementById('ws-menu');
   if (!menu) return;
@@ -1951,7 +1963,7 @@ function saveWsModal() {
     renderWorkspaceSwitcher();
     updateSearchScopeBtn();
   } else {
-    const ws = { id: uid(), name, weeks: [], currentWeekId: null };
+    const ws = { id: uid(), name, weeks: [], currentWeekId: null, theme: 'forest' };
     state.workspaces.push(ws);
     state.currentWorkspaceId = ws.id;
     save();
