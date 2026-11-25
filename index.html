@@ -208,6 +208,12 @@
   /* MAIN */
   #main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; }
   #header { padding: 24px 32px 20px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  /* Desktop sticky header. Must come AFTER the #main / #header rules above so it wins. #main uses
+     overflow: clip (not hidden) so it still clips but isn't a scroll container, which would break sticky. */
+  @media (min-width: 769px) {
+    #main { overflow: clip; }
+    #header { position: sticky; top: 0; z-index: 20; }
+  }
   .week-title-area { flex: 1; }
   .week-title { font-size: calc(22px * var(--fs, 1)); font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
   .week-subtitle { font-size: calc(12px * var(--fs, 1)); color: var(--text2); margin-top: 2px; font-family: var(--mono); }
@@ -904,7 +910,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v99</div>
+  <div class="app-version" title="App version">v100</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
