@@ -78,7 +78,7 @@
   html { color-scheme: light; }
   html:has(body.dark) { color-scheme: dark; }
   * { scrollbar-color: #ccc8bf #f5f4f0; }
-  html:has(body.dark) * { scrollbar-color: #4a4845 #141412; }
+  html:has(body.dark), html:has(body.dark) * { scrollbar-color: #4a4845 #141412; }
   /* SIDEBAR */
   #sidebar {
     width: var(--sidebar-w); min-width: var(--sidebar-w); height: 100vh; position: sticky; top: 0;
@@ -904,7 +904,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v98</div>
+  <div class="app-version" title="App version">v99</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
