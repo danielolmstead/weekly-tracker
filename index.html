@@ -895,7 +895,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v94</div>
+  <div class="app-version" title="App version">v95</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -1121,6 +1121,16 @@ const THEMES = {
 let currentTheme = localStorage.getItem('wt_theme') || 'forest';
 if (!THEMES[currentTheme]) currentTheme = 'forest';
 
+function updateThemeMeta() {
+  const themeMeta = document.getElementById('theme-meta');
+  if (!themeMeta) return;
+  const dark = document.body.classList.contains('dark');
+  const mobile = window.matchMedia('(pointer: coarse), (max-width: 768px)').matches;
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  themeMeta.content = mobile ? (accent || '#2d6a4f') : (dark ? '#000000' : '#ffffff');
+}
+window.addEventListener('resize', () => { try { updateThemeMeta(); } catch (e) {} });
+
 function applyTheme(themeKey) {
   const theme = THEMES[themeKey] || THEMES.forest;
   const mode = document.body.classList.contains('dark') ? 'dark' : 'light';
@@ -1132,9 +1142,9 @@ function applyTheme(themeKey) {
   // Text/icon color for things drawn on a solid accent background (mobile app bar)
   root.style.setProperty('--on-accent', c.on || (mode === 'dark' ? '#141412' : '#ffffff'));
   root.style.setProperty('--accent-ink', c.ink || c.a);
-  // Phone status bar follows the accent so it matches the app bar
-  const themeMeta = document.getElementById('theme-meta');
-  if (themeMeta) themeMeta.content = c.a;
+  // Phone status bar follows the accent so it matches the app bar;
+  // desktop title bar is plain black (dark) / white (light)
+  updateThemeMeta();
   currentTheme = themeKey;
   localStorage.setItem('wt_theme', themeKey);
   renderThemePicker();
