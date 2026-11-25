@@ -70,6 +70,11 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; font-size: calc(14px * var(--fs, 1)); transition: background 0.2s, color 0.2s; }
 
+  /* Installed desktop app: 1px divider under the OS title bar, same color/weight as the other section borders */
+  @media (min-width: 769px) and (display-mode: standalone) {
+    body { border-top: 1px solid var(--border); }
+    #sidebar { height: calc(100vh - 1px); }
+  }
   /* SIDEBAR */
   #sidebar {
     width: var(--sidebar-w); min-width: var(--sidebar-w); height: 100vh; position: sticky; top: 0;
@@ -895,7 +900,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v95</div>
+  <div class="app-version" title="App version">v96</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -1127,7 +1132,7 @@ function updateThemeMeta() {
   const dark = document.body.classList.contains('dark');
   const mobile = window.matchMedia('(pointer: coarse), (max-width: 768px)').matches;
   const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  themeMeta.content = mobile ? (accent || '#2d6a4f') : (dark ? '#000000' : '#ffffff');
+  themeMeta.content = mobile ? (accent || '#2d6a4f') : (dark ? '#1e1d1b' : '#ffffff');
 }
 window.addEventListener('resize', () => { try { updateThemeMeta(); } catch (e) {} });
 
@@ -1143,7 +1148,7 @@ function applyTheme(themeKey) {
   root.style.setProperty('--on-accent', c.on || (mode === 'dark' ? '#141412' : '#ffffff'));
   root.style.setProperty('--accent-ink', c.ink || c.a);
   // Phone status bar follows the accent so it matches the app bar;
-  // desktop title bar is plain black (dark) / white (light)
+  // desktop title bar matches header/sidebar surface: #1e1d1b (dark) / white (light)
   updateThemeMeta();
   currentTheme = themeKey;
   localStorage.setItem('wt_theme', themeKey);
