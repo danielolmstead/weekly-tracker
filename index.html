@@ -1888,7 +1888,6 @@ function renderWorkspaceSwitcher() {
   menu.innerHTML = state.workspaces.map(ws => `
     <div class="ws-item ${ws.id === state.currentWorkspaceId ? 'active' : ''}" role="menuitem" onclick="switchWorkspace('${ws.id}')">
       <span class="ws-item-name">${esc(ws.name)}</span>
-      <span class="ws-item-count" title="Weeks in this workspace">${ws.weeks.length}</span>
       <button class="ws-item-btn" title="Rename" aria-label="Rename workspace" onclick="openWsModal('${ws.id}', event)">${icon('pencil', 14)}</button>
       ${many ? `<button class="ws-item-btn danger" title="Delete" aria-label="Delete workspace" onclick="deleteWorkspace('${ws.id}', event)">${icon('trash', 14)}</button>` : ''}
     </div>`).join('') + `
