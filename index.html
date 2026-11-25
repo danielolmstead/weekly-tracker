@@ -218,6 +218,8 @@
   .week-title { font-size: calc(22px * var(--fs, 1)); font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
   .week-subtitle { font-size: calc(12px * var(--fs, 1)); color: var(--text2); margin-top: 2px; font-family: var(--mono); }
   .week-subtitle .sub-short { display: none; }
+  /* Workspace name shown in the header on mobile only (see the mobile media query). */
+  .header-ws-name { display: none; }
   /* Done count at the right end of the "This Week" list header. Desktop shows "3 / 8 done", mobile the tighter "3/8 done". */
   .list-progress { margin-left: auto; font-family: var(--mono); font-size: calc(12px * var(--fs, 1)); font-weight: 400; letter-spacing: 0; text-transform: none; }
   .list-progress .prog-short { display: none; }
@@ -659,6 +661,10 @@
     .week-title { display: none; }
     .week-subtitle .sub-long { display: none; }
     .week-subtitle .sub-short { display: inline; }
+    /* Mobile header shows the workspace name instead of the week's date range: up to 2 lines, then an ellipsis. */
+    .week-title-area { min-width: 0; }
+    #header .week-subtitle { display: none; }
+    .header-ws-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; font-size: calc(17px * var(--fs, 1)); font-weight: 600; line-height: 1.25; }
     /* Mobile: the date is centered and the done count uses the tighter format. */
     .list-progress { font-size: calc(14px * var(--fs, 1)); }
     .list-progress .prog-long { display: none; }
@@ -910,7 +916,7 @@
   <button class="settings-item" onclick="closeSettingsMenu(); document.getElementById('import-input').click()" title="Import data from a backup file"><span data-icon="upload" data-icon-size="14"></span> Import data</button>
   <div class="settings-sep"></div>
   <!-- Keep in step with CACHE_NAME in sw.js on every deploy (HANDOFF.md). -->
-  <div class="app-version" title="App version">v103</div>
+  <div class="app-version" title="App version">v104</div>
 </div>
 
 <div id="kb-bar" role="toolbar" aria-label="Task actions">
@@ -948,6 +954,7 @@
     <div class="week-title-area">
       <div class="week-title" id="week-title">Select or create a week</div>
       <div class="week-subtitle" id="week-subtitle"></div>
+      <div class="header-ws-name" id="header-ws-name"></div>
     </div>
     <div class="header-btns">
       <button class="btn btn-icon" onclick="openSearchModal()" title="Search (Ctrl+K)"><span data-icon="search"></span></button>
@@ -1880,6 +1887,8 @@ function currentWorkspace() { return state.workspaces.find(ws => ws.id === state
 function renderWorkspaceSwitcher() {
   const nameEl = document.getElementById('ws-trigger-name');
   if (nameEl) nameEl.textContent = currentWorkspace().name;
+  const hdrName = document.getElementById('header-ws-name');
+  if (hdrName) hdrName.textContent = currentWorkspace().name;
   applyWorkspaceTheme();
   document.body.classList.toggle('multi-ws', state.workspaces.length > 1);
   const menu = document.getElementById('ws-menu');
